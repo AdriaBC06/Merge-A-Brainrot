@@ -18,16 +18,13 @@ public class ClickableObject : MonoBehaviour
     
         if (GameManager.Instance == null)
         {
-            Debug.LogError("GameManager.Instance es NULL → No existe o Awake no se ejecutó");
             var gm = FindFirstObjectByType<GameManager>();
             if (gm != null)
             {
-                Debug.LogWarning("Encontré GameManager con FindFirstObjectByType → usando fallback");
                 gm.AddMoney(money);
             }
             else
             {
-                Debug.LogError("¡NI SIGUIENTE ENCONTRADO! Crea un GameObject con GameManager.cs");
                 return;
             }
         }
