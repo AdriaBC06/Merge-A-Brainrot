@@ -3,7 +3,7 @@ using System.Collections;
 
 public class FusionObject : MonoBehaviour
 {
-    public int stage = 1;
+    public int stage = 1 ;
 
     [Header("Sprites por Stage")]
     public Sprite[] stageSprites;
@@ -52,6 +52,11 @@ public class FusionObject : MonoBehaviour
         stage++;
         UpdateSprite();
         StartCoroutine(FusionAnimation());
+    }
+
+    public int GetStage()
+    {
+        return stage;
     }
 
     void UpdateSprite()
