@@ -1,10 +1,15 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class ui_manager : MonoBehaviour
+public class Ui_manager : MonoBehaviour
 {
     public void OnStartPress()
     {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
+        
+    }
+
+    public void OnSettingsPress()
+    {
+        Settings_manager.SettingsOpen();
     }
 }
