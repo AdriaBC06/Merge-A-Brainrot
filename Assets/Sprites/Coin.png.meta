@@ -1,16 +1,10 @@
 fileFormatVersion: 2
-guid: 752acf1016363a27d93024b948f94268
+guid: 3cb502710f449c85ab38be552c6a51a2
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 5342957957463979825
-    second: flamencotarta_0
-  - first:
-      213: -8218714381723760769
-    second: flamencotarta_1
-  - first:
-      213: -1554731821687283693
-    second: flamencotarta_2
+      213: -3338749442709606003
+    second: Coin_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -52,12 +46,12 @@ TextureImporter:
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 1
+  spriteMode: 2
   spriteExtrude: 1
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 1000
+  spritePixelsToUnits: 100
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -119,13 +113,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: flamencotarta_0
+      name: Coin_0
       rect:
         serializedVersion: 2
-        x: 0
-        y: 0
-        width: 283
-        height: 1536
+        x: 111
+        y: 32
+        width: 911
+        height: 987
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -134,52 +128,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 137bc7044fff52a40800000000000000
-      internalID: 5342957957463979825
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: flamencotarta_1
-      rect:
-        serializedVersion: 2
-        x: 170
-        y: 8
-        width: 827
-        height: 1528
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: f7706fe70d241fd80800000000000000
-      internalID: -8218714381723760769
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: flamencotarta_2
-      rect:
-        serializedVersion: 2
-        x: 995
-        y: 0
-        width: 29
-        height: 1536
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 310655f35ab7c6ae0800000000000000
-      internalID: -1554731821687283693
+      spriteID: d81b24142116aa1d0800000000000000
+      internalID: -3338749442709606003
       vertices: []
       indices: 
       edges: []
@@ -188,7 +138,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 5e97eb03825dee720800000000000000
+    spriteID: 
     internalID: 0
     vertices: []
     indices: 
@@ -198,9 +148,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      flamencotarta_0: 5342957957463979825
-      flamencotarta_1: -8218714381723760769
-      flamencotarta_2: -1554731821687283693
+      Coin_0: -3338749442709606003
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
