@@ -44,6 +44,8 @@ public class ClickableObject : MonoBehaviour
             Quaternion.identity
         );
 
+        Debug.Log("Moneda creada en posición: " + coin.transform.position);
+
         Coin coinScript = coin.GetComponent<Coin>();
         if (coinScript != null)
         {
