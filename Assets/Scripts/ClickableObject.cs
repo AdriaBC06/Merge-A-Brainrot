@@ -35,6 +35,21 @@ public class ClickableObject : MonoBehaviour
 
         transform.localScale = originalScale * 1.15f;
         Invoke(nameof(ResetScale), 0.12f);
+
+        if (GameManager.Instance.coinPrefab != null)
+        {
+        GameObject coin = Instantiate(
+            GameManager.Instance.coinPrefab, 
+            transform.position + Vector3.up * 0.5f, 
+            Quaternion.identity
+        );
+
+        Coin coinScript = coin.GetComponent<Coin>();
+        if (coinScript != null)
+        {
+            coinScript.speed = 4f; 
+        }
+        }
     }
 
     private void ResetScale()

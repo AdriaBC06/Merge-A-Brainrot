@@ -7,7 +7,8 @@ public class GameManager : MonoBehaviour
     public float currentMoney = 0f;
 
     [Header("Spawning")]
-    [SerializeField] private GameObject brainrotPrefab;  
+    [SerializeField] private GameObject brainrotPrefab;
+    [SerializeField] public GameObject coinPrefab;  
     [SerializeField] private float spawnInterval = 10f; 
     [SerializeField] private int maxObjects = 12; 
     private float spawnTimer;
@@ -74,5 +75,6 @@ public class GameManager : MonoBehaviour
     {
         currentMoney += amount;
         Debug.Log($"Dinero: {currentMoney}");
+        UIManager.Instance?.UpdateMoney(currentMoney);
     }
 }
