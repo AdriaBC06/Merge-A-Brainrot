@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
@@ -55,6 +56,13 @@ public class GameManager : MonoBehaviour
 
     private void SpawnBrainrot()
     {
+        EnsureContainers();
+        if (screen1Container == null)
+        {
+            Debug.LogWarning("Screen1 Brainrots container not found in scene. Spawn aborted.");
+            return;
+        }
+
         const int maxAttempts = 10;
         Vector3 spawnPos = Vector3.zero;
 
@@ -104,10 +112,6 @@ public class GameManager : MonoBehaviour
         else
         {
             brainrot.transform.SetParent(screen1Container, true);
-            if (brainrot.stage >= 10)
-            {
-                UnlockChangeWorld();
-            }
         }
     }
 
@@ -116,13 +120,9 @@ public class GameManager : MonoBehaviour
         if (brainrot == null) return;
         EnsureContainers();
 
-        if (newStage >= 10)
-        {
-            UnlockChangeWorld();
-        }
-
         if (newStage >= 11)
         {
+            UnlockChangeWorld();
             MoveToScreen2(brainrot);
             AutoSwitchToScreen2();
         }
@@ -130,7 +130,6 @@ public class GameManager : MonoBehaviour
 
     public void ToggleWorld()
     {
-        if (!changeWorldUnlocked) return;
         showingScreen1 = !showingScreen1;
         ApplyWorldVisibility();
     }
@@ -140,23 +139,27 @@ public class GameManager : MonoBehaviour
         if (screen1Container == null)
         {
             GameObject existing = GameObject.Find(screen1Name);
-            if (existing == null)
+            if (existing != null)
             {
-                existing = new GameObject(screen1Name);
-                existing.transform.SetParent(transform, false);
+                screen1Container = existing.transform;
             }
-            screen1Container = existing.transform;
+            else
+            {
+                Debug.LogWarning($"Scene object '{screen1Name}' not found. Please use MainGameScene > {screen1Name}.");
+            }
         }
 
         if (screen2Container == null)
         {
             GameObject existing = GameObject.Find(screen2Name);
-            if (existing == null)
+            if (existing != null)
             {
-                existing = new GameObject(screen2Name);
-                existing.transform.SetParent(transform, false);
+                screen2Container = existing.transform;
             }
-            screen2Container = existing.transform;
+            else
+            {
+                Debug.LogWarning($"Scene object '{screen2Name}' not found. Please use MainGameScene > {screen2Name}.");
+            }
         }
 
         ApplyWorldVisibility();
@@ -170,9 +173,25 @@ public class GameManager : MonoBehaviour
             if (found != null) changeWorldButton = found;
         }
 
-        if (!changeWorldUnlocked && changeWorldButton != null)
+        if (changeWorldButton != null)
         {
-            changeWorldButton.SetActive(false);
+            Button button = changeWorldButton.GetComponent<Button>();
+            if (button == null)
+            {
+                button = changeWorldButton.GetComponentInChildren<Button>();
+            }
+
+            if (button != null)
+            {
+                button.onClick.RemoveListener(ToggleWorld);
+                button.onClick.AddListener(ToggleWorld);
+            }
+            else
+            {
+                Debug.LogWarning("Change World Button is missing a Button component.");
+            }
+
+            changeWorldButton.SetActive(changeWorldUnlocked);
         }
     }
 
