@@ -5,7 +5,7 @@ public class Ui_manager : MonoBehaviour
 {
     public void OnStartPress()
     {
-        
+        SceneManager.LoadScene(2);
     }
 
     public void OnSettingsPress()
