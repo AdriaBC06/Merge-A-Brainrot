@@ -450,6 +450,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   currentMoney: 0
   brainrotPrefab: {fileID: 8390704064640130717, guid: a61c2d2490bd984a993ba5c0d9a31145, type: 3}
+  coinPrefab: {fileID: 0}
   spawnInterval: 3
   maxObjects: 12
 --- !u!4 &1534483517
