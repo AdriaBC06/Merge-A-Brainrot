@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.SceneManagement;
 
-public class Settings_manager : MonoBehaviour
+public class SettingsManager : MonoBehaviour
 {   
     static int index;
 
