@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
@@ -13,6 +14,15 @@ public class GameManager : MonoBehaviour
     [SerializeField] private int maxObjects = 12; 
     private float spawnTimer;
 
+    [Header("World Containers")]
+    [SerializeField] private string screen1Name = "Screen1 Brainrots";
+    [SerializeField] private string screen2Name = "Screen2 Brainrots";
+    [SerializeField] private GameObject changeWorldButton;
+    private Transform screen1Container;
+    private Transform screen2Container;
+    private bool changeWorldUnlocked = false;
+    private bool showingScreen1 = true;
+
     private void Awake()
     {
         if (Instance != null)
@@ -22,6 +32,9 @@ public class GameManager : MonoBehaviour
         }
         Instance = this;
         DontDestroyOnLoad(gameObject);
+
+        EnsureContainers();
+        InitChangeWorldButton();
     }
 
     private void Update()
@@ -43,6 +56,13 @@ public class GameManager : MonoBehaviour
 
     private void SpawnBrainrot()
     {
+        EnsureContainers();
+        if (screen1Container == null)
+        {
+            Debug.LogWarning("Screen1 Brainrots container not found in scene. Spawn aborted.");
+            return;
+        }
+
         const int maxAttempts = 10;
         Vector3 spawnPos = Vector3.zero;
 
@@ -56,7 +76,7 @@ public class GameManager : MonoBehaviour
             if (Physics2D.OverlapCircle(pos, 1.2f) == null)
             {
                 spawnPos = new Vector3(x, y, 0);
-                Instantiate(brainrotPrefab, spawnPos, Quaternion.identity);
+                Instantiate(brainrotPrefab, spawnPos, Quaternion.identity, screen1Container);
                 
                 int total = Object.FindObjectsByType<FusionObject>(FindObjectsInactive.Exclude, FindObjectsSortMode.None).Length;
                 Debug.Log($"Brainrot spawneado en {spawnPos} | Total en escena: {total}");
@@ -68,7 +88,7 @@ public class GameManager : MonoBehaviour
         float fallbackX = Random.Range(-6f, 6f);
         float fallbackY = Random.Range(-4f, 4f);
         spawnPos = new Vector3(fallbackX, fallbackY, 0);
-        Instantiate(brainrotPrefab, spawnPos, Quaternion.identity);
+        Instantiate(brainrotPrefab, spawnPos, Quaternion.identity, screen1Container);
     }
 
     public void AddMoney(float amount)
@@ -76,5 +96,130 @@ public class GameManager : MonoBehaviour
         currentMoney += amount;
         Debug.Log($"Dinero: {currentMoney}");
         UIManager.Instance?.UpdateMoney(currentMoney);
+    }
+
+    public void RegisterBrainrot(FusionObject brainrot)
+    {
+        if (brainrot == null) return;
+        EnsureContainers();
+
+        if (brainrot.stage >= 11)
+        {
+            MoveToScreen2(brainrot);
+            AutoSwitchToScreen2();
+            UnlockChangeWorld();
+        }
+        else
+        {
+            brainrot.transform.SetParent(screen1Container, true);
+        }
+    }
+
+    public void OnBrainrotStageChanged(FusionObject brainrot, int newStage)
+    {
+        if (brainrot == null) return;
+        EnsureContainers();
+
+        if (newStage >= 11)
+        {
+            UnlockChangeWorld();
+            MoveToScreen2(brainrot);
+            AutoSwitchToScreen2();
+        }
+    }
+
+    public void ToggleWorld()
+    {
+        showingScreen1 = !showingScreen1;
+        ApplyWorldVisibility();
+    }
+
+    private void EnsureContainers()
+    {
+        if (screen1Container == null)
+        {
+            GameObject existing = GameObject.Find(screen1Name);
+            if (existing != null)
+            {
+                screen1Container = existing.transform;
+            }
+            else
+            {
+                Debug.LogWarning($"Scene object '{screen1Name}' not found. Please use MainGameScene > {screen1Name}.");
+            }
+        }
+
+        if (screen2Container == null)
+        {
+            GameObject existing = GameObject.Find(screen2Name);
+            if (existing != null)
+            {
+                screen2Container = existing.transform;
+            }
+            else
+            {
+                Debug.LogWarning($"Scene object '{screen2Name}' not found. Please use MainGameScene > {screen2Name}.");
+            }
+        }
+
+        ApplyWorldVisibility();
+    }
+
+    private void InitChangeWorldButton()
+    {
+        if (changeWorldButton == null)
+        {
+            GameObject found = GameObject.Find("Change World Button");
+            if (found != null) changeWorldButton = found;
+        }
+
+        if (changeWorldButton != null)
+        {
+            Button button = changeWorldButton.GetComponent<Button>();
+            if (button == null)
+            {
+                button = changeWorldButton.GetComponentInChildren<Button>();
+            }
+
+            if (button != null)
+            {
+                button.onClick.RemoveListener(ToggleWorld);
+                button.onClick.AddListener(ToggleWorld);
+            }
+            else
+            {
+                Debug.LogWarning("Change World Button is missing a Button component.");
+            }
+
+            changeWorldButton.SetActive(changeWorldUnlocked);
+        }
+    }
+
+    private void UnlockChangeWorld()
+    {
+        if (changeWorldUnlocked) return;
+        changeWorldUnlocked = true;
+        if (changeWorldButton != null)
+        {
+            changeWorldButton.SetActive(true);
+        }
+    }
+
+    private void AutoSwitchToScreen2()
+    {
+        showingScreen1 = false;
+        ApplyWorldVisibility();
+    }
+
+    private void ApplyWorldVisibility()
+    {
+        if (screen1Container != null) screen1Container.gameObject.SetActive(showingScreen1);
+        if (screen2Container != null) screen2Container.gameObject.SetActive(!showingScreen1);
+    }
+
+    private void MoveToScreen2(FusionObject brainrot)
+    {
+        if (screen2Container == null) return;
+        brainrot.transform.SetParent(screen2Container, true);
     }
 }
