@@ -11,6 +11,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] public GameObject coinPrefab;  
     [SerializeField] private float spawnInterval = 10f; 
     [SerializeField] private int maxObjects = 12; 
+    [SerializeField] private float spawnZ = -1f;
     private float spawnTimer;
 
     private void Awake()
@@ -55,7 +56,7 @@ public class GameManager : MonoBehaviour
 
             if (Physics2D.OverlapCircle(pos, 1.2f) == null)
             {
-                spawnPos = new Vector3(x, y, 0);
+                spawnPos = new Vector3(x, y, spawnZ);
                 Instantiate(brainrotPrefab, spawnPos, Quaternion.identity);
                 
                 int total = Object.FindObjectsByType<FusionObject>(FindObjectsInactive.Exclude, FindObjectsSortMode.None).Length;
@@ -67,7 +68,7 @@ public class GameManager : MonoBehaviour
         // Fallback si no encontró sitio libre
         float fallbackX = Random.Range(-6f, 6f);
         float fallbackY = Random.Range(-4f, 4f);
-        spawnPos = new Vector3(fallbackX, fallbackY, 0);
+        spawnPos = new Vector3(fallbackX, fallbackY, spawnZ);
         Instantiate(brainrotPrefab, spawnPos, Quaternion.identity);
     }
 
