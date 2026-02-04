@@ -164,6 +164,16 @@ MonoBehaviour:
   - {fileID: 39101290670271147, guid: 5e0f4bbda1fad2652ba682c1776746b9, type: 3}
   - {fileID: -6956993757051010167, guid: 62e8b27e6a8b54cd6a0236383392c0b3, type: 3}
   - {fileID: 9103472434282466136, guid: acacde089f2dc917cb8a26be2d14d71b, type: 3}
+  - {fileID: 759806574906025348, guid: 47c777f8b87da6890a49517248a9598c, type: 3}
+  - {fileID: -3176109390947543837, guid: e3bc53cfcbd8d223d89a019b115453dd, type: 3}
+  - {fileID: -24341028461600834, guid: 2b90b0f82853511dca6b17dee1b7b1a9, type: 3}
+  - {fileID: -4360853082330091626, guid: 677ba8d40622b4533b039e55b527b641, type: 3}
+  - {fileID: -6403230747875206433, guid: 7a6424c0d6d367068b3f00c79cfa6b33, type: 3}
+  - {fileID: 3977456276780613376, guid: 4b10fcd223f96dbf2b07049d76b2384c, type: 3}
+  - {fileID: 263693435333154959, guid: f20d13dc1a8bfca66b023c6a36d748cc, type: 3}
+  - {fileID: 7944028534288262053, guid: 98e2befb008291e6b9d8ea8b9ac284b2, type: 3}
+  - {fileID: 5322218863732700604, guid: 660afdd25ed639cfcbcd5778c33eb310, type: 3}
+  - {fileID: 3400328759139805919, guid: defa731db6c0ca6beb4b71f93a68be14, type: 3}
 --- !u!50 &5813295914793565568
 Rigidbody2D:
   serializedVersion: 5
@@ -203,4 +213,3 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d8af574cfc4fc2effa246ffa71563be1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moneyValue: 10
