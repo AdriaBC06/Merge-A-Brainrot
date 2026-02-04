@@ -32,7 +32,7 @@ namespace SpaceGUI
             first.gameObject.SetActive(false);
             third.gameObject.SetActive(true);
             fourth.gameObject.SetActive(false);
-            global::SettingsManager.SetFullscreen(true);
+            SettingsManager.SetFullscreen(true);
         }
         public void Off()
         {
@@ -41,7 +41,7 @@ namespace SpaceGUI
             second.gameObject.SetActive(false);
             third.gameObject.SetActive(false);
             fourth.gameObject.SetActive(true);
-            global::SettingsManager.SetFullscreen(false);
+            SettingsManager.SetFullscreen(false);
         }
     }
 }
