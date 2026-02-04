@@ -14,7 +14,6 @@ namespace SpaceGUI
         public Image background;
         int index;
 
-
         void Update()
         {
             if (index == 1)
