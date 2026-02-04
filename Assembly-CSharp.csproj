@@ -50,8 +50,7 @@
   <ItemGroup>
     <Compile Include="Assets\Space_Exploration_GUI_Kit\Scripts\Toggle.cs" />
     <Compile Include="Assets\Scripts\Drag2D.cs" />
-    <Compile Include="Assets\Scripts\ui_manager.cs" />
-    <Compile Include="Assets\Scripts\settings_manager.cs" />
+    <Compile Include="Assets\Scripts\SettingsManager.cs" />
     <Compile Include="Assets\Scripts\Coin.cs" />
     <Compile Include="Assets\Space_Exploration_GUI_Kit\Scripts\Scene_Controller.cs" />
     <Compile Include="Assets\Scripts\ClickableObject.cs" />
