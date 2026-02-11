@@ -1004,9 +1004,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1619413862}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0ffa7919530f3a8408791f8e756fd636, type: 3}
+  m_Script: {fileID: 11500000, guid: 9e7cb654aa4c788c58aaec2350b6289c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  moneyText: {fileID: 0}
 --- !u!4 &1619413864
 Transform:
   m_ObjectHideFlags: 0

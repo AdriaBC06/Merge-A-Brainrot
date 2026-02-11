@@ -12,6 +12,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] public GameObject coinPrefab;  
     [SerializeField] private float spawnInterval = 10f; 
     [SerializeField] private int maxObjects = 12; 
+    [SerializeField] private float spawnZ = -1f;
     private float spawnTimer;
 
     [Header("World Containers")]
