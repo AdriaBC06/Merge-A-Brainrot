@@ -195,7 +195,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: -1000
-  m_Sprite: {fileID: -6770843721058798872, guid: 12951bd5f0cfcc4838b443686ed20a6b, type: 3}
+  m_Sprite: {fileID: -5715551077643530880, guid: dde03bfe032666fc5895c35310347415, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -1169,5 +1169,5 @@ SceneRoots:
   - {fileID: 1534483517}
   - {fileID: 1726976208}
   - {fileID: 653687485}
-  - {fileID: 217231416}
   - {fileID: 1926876696}
+  - {fileID: 217231416}
