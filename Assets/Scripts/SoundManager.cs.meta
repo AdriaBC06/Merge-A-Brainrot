@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 75a16eb5fa244004b9ca4ada5a2779a1
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - Click: {fileID: 8300000, guid: ef7e810d8b4776e48a9fd32527df2a21, type: 3}
+  - Fusion: {fileID: 8300000, guid: 61add6dbc92afd048810ce733ed817e1, type: 3}
+  - Moneda: {fileID: 8300000, guid: 866a5842e4792074188d75172c1042c5, type: 3}
+  - MusicaFondo: {fileID: 8300000, guid: a8ce3f5a4ddff904ea6ea1dd69d21334, type: 3}
+  - Mercado: {fileID: 8300000, guid: 41b70b3141e7add409d1dbeaef42c930, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
