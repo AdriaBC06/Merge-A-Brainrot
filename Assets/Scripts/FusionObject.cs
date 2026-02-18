@@ -65,6 +65,18 @@ public class FusionObject : MonoBehaviour
         return stage;
     }
 
+    public void SetStage(int targetStage)
+    {
+        int maxStage = 1;
+        if (stageSprites != null && stageSprites.Length > 0)
+        {
+            maxStage = stageSprites.Length;
+        }
+
+        stage = Mathf.Clamp(targetStage, 1, maxStage);
+        UpdateSprite();
+    }
+
     void UpdateSprite()
     {
         int index = stage - 1;

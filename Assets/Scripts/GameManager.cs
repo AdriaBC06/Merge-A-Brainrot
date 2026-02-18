@@ -1,4 +1,6 @@
+using System;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
@@ -6,23 +8,32 @@ public class GameManager : MonoBehaviour
     public static GameManager Instance { get; private set; }
 
     public float currentMoney = 0f;
+    public int HighestStageReached => highestStageReached;
+    public event Action<int> HighestStageReachedChanged;
 
     [Header("Spawning")]
     [SerializeField] private GameObject brainrotPrefab;
-    [SerializeField] public GameObject coinPrefab;  
-    [SerializeField] private float spawnInterval = 10f; 
-    [SerializeField] private int maxObjects = 12; 
+    [SerializeField] public GameObject coinPrefab;
+    [SerializeField] private float spawnInterval = 10f;
+    [SerializeField] private int maxObjects = 12;
     [SerializeField] private float spawnZ = -1f;
+    [SerializeField] private bool spawnInitialBrainrotOnSceneLoad = true;
     private float spawnTimer;
 
     [Header("World Containers")]
+    [SerializeField] private string mainGameSceneName = "MainGameScene";
     [SerializeField] private string screen1Name = "Screen1 Brainrots";
     [SerializeField] private string screen2Name = "Screen2 Brainrots";
+    [SerializeField] private string runtimeScreen1Name = "__Screen1BrainrotsRuntime";
+    [SerializeField] private string runtimeScreen2Name = "__Screen2BrainrotsRuntime";
     [SerializeField] private GameObject changeWorldButton;
     private Transform screen1Container;
     private Transform screen2Container;
     private bool changeWorldUnlocked = false;
     private bool showingScreen1 = true;
+
+    private int highestStageReached = 1;
+    private bool initialBrainrotSpawned = false;
 
     private void Awake()
     {
@@ -33,9 +44,23 @@ public class GameManager : MonoBehaviour
         }
         Instance = this;
         DontDestroyOnLoad(gameObject);
+        SceneManager.sceneLoaded += HandleSceneLoaded;
 
         EnsureContainers();
         InitChangeWorldButton();
+    }
+
+    private void Start()
+    {
+        TrySpawnInitialBrainrot();
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            SceneManager.sceneLoaded -= HandleSceneLoaded;
+        }
     }
 
     private void Update()
@@ -47,49 +72,80 @@ public class GameManager : MonoBehaviour
         {
             spawnTimer = 0f;
 
-            int currentCount = Object.FindObjectsByType<FusionObject>(FindObjectsInactive.Exclude, FindObjectsSortMode.None).Length;
-            if (currentCount < maxObjects)
+            if (GetCurrentBrainrotCount() < maxObjects)
             {
-                SpawnBrainrot();
+                SpawnBrainrot(1);
             }
         }
     }
 
-    private void SpawnBrainrot()
+    private void HandleSceneLoaded(Scene _, LoadSceneMode __)
     {
+        screen1Container = null;
+        screen2Container = null;
+        changeWorldButton = null;
+        initialBrainrotSpawned = false;
+        spawnTimer = 0f;
+
+        if (IsMainGameSceneActive())
+        {
+            // Ensure newly spawned stage-1 brainrots are visible on scene entry.
+            showingScreen1 = true;
+        }
+
         EnsureContainers();
-        if (screen1Container == null)
+        InitChangeWorldButton();
+        TrySpawnInitialBrainrot();
+    }
+
+    public int GetMaxBrainrotStage()
+    {
+        FusionObject prefabFusion = GetBrainrotPrefabFusion();
+        if (prefabFusion == null || prefabFusion.stageSprites == null || prefabFusion.stageSprites.Length == 0)
         {
-            Debug.LogWarning("Screen1 Brainrots container not found in scene. Spawn aborted.");
-            return;
+            return 1;
         }
 
-        const int maxAttempts = 10;
-        Vector3 spawnPos = Vector3.zero;
+        return prefabFusion.stageSprites.Length;
+    }
 
-        // busca sitio libre para spawnear
-        for (int i = 0; i < maxAttempts; i++)
+    public int GetVisibleShopStageLimit()
+    {
+        int maxStage = GetMaxBrainrotStage();
+        return Mathf.Clamp(highestStageReached + 1, 1, maxStage);
+    }
+
+    public Sprite GetBrainrotSpriteForStage(int stage)
+    {
+        FusionObject prefabFusion = GetBrainrotPrefabFusion();
+        if (prefabFusion == null || prefabFusion.stageSprites == null || prefabFusion.stageSprites.Length == 0)
         {
-            float x = Random.Range(-6f, 6f);
-            float y = Random.Range(-4f, 4f);
-            Vector2 pos = new Vector2(x, y);
-
-            if (Physics2D.OverlapCircle(pos, 1.2f) == null)
-            {
-                spawnPos = new Vector3(x, y, 0);
-                Instantiate(brainrotPrefab, spawnPos, Quaternion.identity, screen1Container);
-                
-                int total = Object.FindObjectsByType<FusionObject>(FindObjectsInactive.Exclude, FindObjectsSortMode.None).Length;
-                Debug.Log($"Brainrot spawneado en {spawnPos} | Total en escena: {total}");
-                return;
-            }
+            return null;
         }
 
-        // Fallback si no encontró sitio libre
-        float fallbackX = Random.Range(-6f, 6f);
-        float fallbackY = Random.Range(-4f, 4f);
-        spawnPos = new Vector3(fallbackX, fallbackY, 0);
-        Instantiate(brainrotPrefab, spawnPos, Quaternion.identity, screen1Container);
+        int index = Mathf.Clamp(stage - 1, 0, prefabFusion.stageSprites.Length - 1);
+        return prefabFusion.stageSprites[index];
+    }
+
+    public bool TryBuyBrainrotFromShop(int stage, float price)
+    {
+        if (stage < 1) return false;
+        if (stage > highestStageReached) return false;
+        if (currentMoney < price) return false;
+        if (GetCurrentBrainrotCount() >= maxObjects) return false;
+
+        currentMoney -= price;
+        UIManager.Instance?.UpdateMoney(currentMoney);
+
+        bool spawned = SpawnBrainrot(stage);
+        if (!spawned)
+        {
+            currentMoney += price;
+            UIManager.Instance?.UpdateMoney(currentMoney);
+            return false;
+        }
+
+        return true;
     }
 
     public void AddMoney(float amount)
@@ -103,6 +159,7 @@ public class GameManager : MonoBehaviour
     {
         if (brainrot == null) return;
         EnsureContainers();
+        TrackHighestStage(brainrot.stage);
 
         if (brainrot.stage >= 11)
         {
@@ -120,6 +177,7 @@ public class GameManager : MonoBehaviour
     {
         if (brainrot == null) return;
         EnsureContainers();
+        TrackHighestStage(newStage);
 
         if (newStage >= 11)
         {
@@ -135,16 +193,114 @@ public class GameManager : MonoBehaviour
         ApplyWorldVisibility();
     }
 
-    private void EnsureContainers()
+    private bool SpawnBrainrot(int stage)
     {
+        EnsureContainers();
+        if (brainrotPrefab == null)
+        {
+            Debug.LogWarning("Brainrot prefab not assigned.");
+            return false;
+        }
+
         if (screen1Container == null)
         {
-            GameObject existing = GameObject.Find(screen1Name);
-            if (existing != null)
+            Debug.LogWarning("Screen1 Brainrots container not found in scene. Spawn aborted.");
+            return false;
+        }
+
+        Vector3 spawnPos = FindSpawnPosition();
+        GameObject spawned = Instantiate(brainrotPrefab, spawnPos, Quaternion.identity, screen1Container);
+
+        FusionObject fusion = spawned.GetComponent<FusionObject>();
+        if (fusion != null)
+        {
+            fusion.SetStage(stage);
+        }
+
+        int total = GetCurrentBrainrotCount();
+        Debug.Log($"Brainrot stage {stage} spawneado en {spawnPos} | Total en escena: {total}");
+        return true;
+    }
+
+    private Vector3 FindSpawnPosition()
+    {
+        const int maxAttempts = 10;
+
+        for (int i = 0; i < maxAttempts; i++)
+        {
+            float x = UnityEngine.Random.Range(-6f, 6f);
+            float y = UnityEngine.Random.Range(-4f, 4f);
+            Vector2 pos = new Vector2(x, y);
+
+            if (Physics2D.OverlapCircle(pos, 1.2f) == null)
+            {
+                return new Vector3(x, y, spawnZ);
+            }
+        }
+
+        float fallbackX = UnityEngine.Random.Range(-6f, 6f);
+        float fallbackY = UnityEngine.Random.Range(-4f, 4f);
+        return new Vector3(fallbackX, fallbackY, spawnZ);
+    }
+
+    private int GetCurrentBrainrotCount()
+    {
+        return UnityEngine.Object.FindObjectsByType<FusionObject>(FindObjectsInactive.Exclude, FindObjectsSortMode.None).Length;
+    }
+
+    private FusionObject GetBrainrotPrefabFusion()
+    {
+        if (brainrotPrefab == null) return null;
+        return brainrotPrefab.GetComponent<FusionObject>();
+    }
+
+    private void TrySpawnInitialBrainrot()
+    {
+        if (!spawnInitialBrainrotOnSceneLoad) return;
+        if (initialBrainrotSpawned) return;
+
+        EnsureContainers();
+        if (screen1Container == null) return;
+
+        if (GetCurrentBrainrotCount() > 0)
+        {
+            initialBrainrotSpawned = true;
+            return;
+        }
+
+        initialBrainrotSpawned = SpawnBrainrot(1);
+    }
+
+    private void TrackHighestStage(int stage)
+    {
+        int clamped = Mathf.Max(1, stage);
+        if (clamped <= highestStageReached) return;
+
+        highestStageReached = clamped;
+        HighestStageReachedChanged?.Invoke(highestStageReached);
+    }
+
+    private void EnsureContainers()
+    {
+        if (!IsMainGameSceneActive())
+        {
+            return;
+        }
+
+        if (screen1Container == null)
+        {
+            GameObject existing = FindSceneObjectByName(screen1Name);
+            if (existing != null && !IsUiTransform(existing.transform))
             {
                 screen1Container = existing.transform;
             }
-            else
+
+            if (screen1Container == null)
+            {
+                screen1Container = GetOrCreateRuntimeContainer(runtimeScreen1Name);
+            }
+
+            if (screen1Container == null)
             {
                 Debug.LogWarning($"Scene object '{screen1Name}' not found. Please use MainGameScene > {screen1Name}.");
             }
@@ -152,12 +308,18 @@ public class GameManager : MonoBehaviour
 
         if (screen2Container == null)
         {
-            GameObject existing = GameObject.Find(screen2Name);
-            if (existing != null)
+            GameObject existing = FindSceneObjectByName(screen2Name);
+            if (existing != null && !IsUiTransform(existing.transform))
             {
                 screen2Container = existing.transform;
             }
-            else
+
+            if (screen2Container == null)
+            {
+                screen2Container = GetOrCreateRuntimeContainer(runtimeScreen2Name);
+            }
+
+            if (screen2Container == null)
             {
                 Debug.LogWarning($"Scene object '{screen2Name}' not found. Please use MainGameScene > {screen2Name}.");
             }
@@ -222,5 +384,56 @@ public class GameManager : MonoBehaviour
     {
         if (screen2Container == null) return;
         brainrot.transform.SetParent(screen2Container, true);
+    }
+
+    private bool IsMainGameSceneActive()
+    {
+        return SceneManager.GetActiveScene().name == mainGameSceneName;
+    }
+
+    private GameObject FindSceneObjectByName(string objectName)
+    {
+        GameObject found = GameObject.Find(objectName);
+        if (found != null)
+        {
+            return found;
+        }
+
+        Transform[] allTransforms = Resources.FindObjectsOfTypeAll<Transform>();
+        for (int i = 0; i < allTransforms.Length; i++)
+        {
+            Transform candidate = allTransforms[i];
+            if (candidate == null) continue;
+            if (candidate.name != objectName) continue;
+            if (!candidate.gameObject.scene.IsValid() || !candidate.gameObject.scene.isLoaded) continue;
+
+            return candidate.gameObject;
+        }
+
+        return null;
+    }
+
+    private bool IsUiTransform(Transform candidate)
+    {
+        if (candidate == null) return false;
+        return candidate.GetComponent<RectTransform>() != null || candidate.GetComponentInParent<Canvas>() != null;
+    }
+
+    private Transform GetOrCreateRuntimeContainer(string objectName)
+    {
+        Scene activeScene = SceneManager.GetActiveScene();
+        if (!activeScene.IsValid() || !activeScene.isLoaded) return null;
+
+        GameObject[] roots = activeScene.GetRootGameObjects();
+        for (int i = 0; i < roots.Length; i++)
+        {
+            if (roots[i].name == objectName)
+            {
+                return roots[i].transform;
+            }
+        }
+
+        GameObject container = new GameObject(objectName);
+        return container.transform;
     }
 }
