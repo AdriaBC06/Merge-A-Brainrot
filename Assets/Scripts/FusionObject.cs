@@ -19,11 +19,6 @@ public class FusionObject : MonoBehaviour
         UpdateSprite();
     }
 
-    void Start()
-    {
-        GameManager.Instance?.RegisterBrainrot(this);
-    }
-
     void OnCollisionStay2D(Collision2D collision)
     {
         FusionObject other = collision.gameObject.GetComponent<FusionObject>();
@@ -56,7 +51,6 @@ public class FusionObject : MonoBehaviour
     {
         stage++;
         UpdateSprite();
-        GameManager.Instance?.OnBrainrotStageChanged(this, stage);
         StartCoroutine(FusionAnimation());
     }
 

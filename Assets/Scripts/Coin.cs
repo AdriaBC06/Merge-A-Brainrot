@@ -26,9 +26,11 @@ public class Coin : MonoBehaviour
             return;
         }
 
+        // Sube para arriba
         float height = speed * t;
         transform.position = startPos + Vector3.up * height;
 
+        // Fade
         Color c = sr.color;
         c.a = fadeCurve.Evaluate(t / lifetime);
         sr.color = c;

@@ -78,7 +78,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: -3338749442709606003, guid: 3cb502710f449c85ab38be552c6a51a2, type: 3}
+  m_Sprite: {fileID: 6819147291191527595, guid: f9b444f36254bc143a8d9c17a3e8bc84, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -128,8 +128,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aa97c922f44e9b1a9824c962e53dd878, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+<<<<<<< HEAD
   speed: 2
   lifetime: 0.2
+=======
+  speed: 3
+  lifetime: 1
+>>>>>>> parent of 56fcd12 (Merge branch 'origin/feature/main-game-ui' of https://github.com/AdriaBC06/Merge-A-Brainrot into origin/feature/main-game-ui)
   fadeCurve:
     serializedVersion: 2
     m_Curve:
