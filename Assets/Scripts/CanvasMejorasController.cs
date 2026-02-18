@@ -25,9 +25,17 @@ public class CanvasMejorasController : MonoBehaviour
     [SerializeField] private float autoSpawnInitialInterval = 10f;
     [SerializeField] private float autoSpawnReductionPerPurchase = 1f;
 
+    [Header("Coin Multiplier Upgrade")]
+    [SerializeField] private Button coinMultiplierUpgradeButton;
+    [SerializeField] private TextMeshProUGUI coinMultiplierPriceText;
+    [SerializeField] private int coinMultiplierInitialPrice = 100;
+    [SerializeField] private float coinMultiplierPriceMultiplier = 2f;
+    [SerializeField] private float coinMultiplierIncreasePerPurchase = 0.5f;
+
     private int autoClickPurchases;
     private int autoClickCurrentPrice;
     private int autoSpawnCurrentPrice;
+    private int coinMultiplierCurrentPrice;
 
     private void Awake()
     {
@@ -58,26 +66,43 @@ public class CanvasMejorasController : MonoBehaviour
             autoSpawnUpgradeButton.onClick.AddListener(BuyAutoSpawnUpgrade);
         }
 
+        if (coinMultiplierUpgradeButton != null)
+        {
+            coinMultiplierUpgradeButton.onClick.RemoveListener(BuyCoinMultiplierUpgrade);
+            coinMultiplierUpgradeButton.onClick.AddListener(BuyCoinMultiplierUpgrade);
+        }
+
         if (panel != null)
         {
             panel.SetActive(false);
         }
+        else
+        {
+            Debug.LogWarning("[CanvasMejorasController] Panel reference is missing. BotonMejoras cannot toggle it.");
+        }
+
+        if (botonMejorasButton == null)
+        {
+            Debug.LogWarning("[CanvasMejorasController] BotonMejoras button reference is missing.");
+        }
 
         UpdateAutoClickPriceText();
         UpdateAutoSpawnPriceText();
+        UpdateCoinMultiplierPriceText();
     }
 
     private void InitializeUpgradeState()
     {
         autoClickCurrentPrice = Mathf.Max(1, autoClickInitialPrice);
         autoSpawnCurrentPrice = Mathf.Max(1, autoSpawnInitialPrice);
+        coinMultiplierCurrentPrice = Mathf.Max(1, coinMultiplierInitialPrice);
     }
 
     private void AutoAssignReferences()
     {
         if (panel == null)
         {
-            Transform panelTransform = transform.Find("Panel");
+            Transform panelTransform = FindChildRecursive(transform, "Panel");
             if (panelTransform != null)
             {
                 panel = panelTransform.gameObject;
@@ -86,10 +111,11 @@ public class CanvasMejorasController : MonoBehaviour
 
         if (botonMejorasButton == null)
         {
-            Transform botonMejorasTransform = transform.Find("BotonMejoras");
+            Transform botonMejorasTransform = FindChildRecursive(transform, "BotonMejoras");
             if (botonMejorasTransform != null)
             {
-                botonMejorasButton = botonMejorasTransform.GetComponent<Button>();
+                botonMejorasButton = botonMejorasTransform.GetComponent<Button>() ??
+                                     botonMejorasTransform.GetComponentInChildren<Button>(true);
             }
         }
 
@@ -100,10 +126,11 @@ public class CanvasMejorasController : MonoBehaviour
 
         if (cerrarButton == null)
         {
-            Transform cerrarTransform = panel.transform.Find("Cerrar");
+            Transform cerrarTransform = FindChildRecursive(panel.transform, "Cerrar");
             if (cerrarTransform != null)
             {
-                cerrarButton = cerrarTransform.GetComponent<Button>();
+                cerrarButton = cerrarTransform.GetComponent<Button>() ??
+                               cerrarTransform.GetComponentInChildren<Button>(true);
             }
         }
 
@@ -150,6 +177,32 @@ public class CanvasMejorasController : MonoBehaviour
                 autoSpawnPriceText = autoSpawnPriceTransform.GetComponent<TextMeshProUGUI>();
             }
         }
+
+        if (coinMultiplierUpgradeButton == null)
+        {
+            Transform coinMultiplierButtonTransform = panel.transform.Find("Mejora Multiplicar Moneda/Button");
+            if (coinMultiplierButtonTransform == null)
+            {
+                coinMultiplierButtonTransform = panel.transform.Find("Mejora-Multiplicar-Moneda/Button");
+            }
+            if (coinMultiplierButtonTransform != null)
+            {
+                coinMultiplierUpgradeButton = coinMultiplierButtonTransform.GetComponent<Button>();
+            }
+        }
+
+        if (coinMultiplierPriceText == null)
+        {
+            Transform coinMultiplierPriceTransform = panel.transform.Find("Mejora Multiplicar Moneda/Price");
+            if (coinMultiplierPriceTransform == null)
+            {
+                coinMultiplierPriceTransform = panel.transform.Find("Mejora-Multiplicar-Moneda/Price");
+            }
+            if (coinMultiplierPriceTransform != null)
+            {
+                coinMultiplierPriceText = coinMultiplierPriceTransform.GetComponent<TextMeshProUGUI>();
+            }
+        }
     }
 
     private void OnDestroy()
@@ -172,6 +225,11 @@ public class CanvasMejorasController : MonoBehaviour
         if (autoSpawnUpgradeButton != null)
         {
             autoSpawnUpgradeButton.onClick.RemoveListener(BuyAutoSpawnUpgrade);
+        }
+
+        if (coinMultiplierUpgradeButton != null)
+        {
+            coinMultiplierUpgradeButton.onClick.RemoveListener(BuyCoinMultiplierUpgrade);
         }
     }
 
@@ -269,6 +327,24 @@ public class CanvasMejorasController : MonoBehaviour
         UpdateAutoSpawnPriceText();
     }
 
+    private void BuyCoinMultiplierUpgrade()
+    {
+        GameManager gameManager = GameManager.Instance ?? FindFirstObjectByType<GameManager>();
+        if (gameManager == null)
+        {
+            return;
+        }
+
+        if (!gameManager.TrySpendMoney(coinMultiplierCurrentPrice))
+        {
+            return;
+        }
+
+        ClickableObject.IncreaseGlobalMoneyMultiplier(coinMultiplierIncreasePerPurchase);
+        coinMultiplierCurrentPrice = MultiplyPrice(coinMultiplierCurrentPrice, coinMultiplierPriceMultiplier);
+        UpdateCoinMultiplierPriceText();
+    }
+
     private void UpdateAutoClickPriceText()
     {
         if (autoClickPriceText == null)
@@ -318,9 +394,43 @@ public class CanvasMejorasController : MonoBehaviour
         autoSpawnPriceText.text = $"Precio: {autoSpawnCurrentPrice}$";
     }
 
+    private void UpdateCoinMultiplierPriceText()
+    {
+        if (coinMultiplierPriceText == null)
+        {
+            return;
+        }
+
+        coinMultiplierPriceText.text = $"Precio: {coinMultiplierCurrentPrice}$";
+    }
+
     private int MultiplyPrice(int currentPrice, float multiplier)
     {
         float safeMultiplier = Mathf.Max(1f, multiplier);
         return Mathf.Max(1, Mathf.CeilToInt(currentPrice * safeMultiplier));
+    }
+
+    private Transform FindChildRecursive(Transform root, string childName)
+    {
+        if (root == null)
+        {
+            return null;
+        }
+
+        if (root.name == childName)
+        {
+            return root;
+        }
+
+        for (int i = 0; i < root.childCount; i++)
+        {
+            Transform found = FindChildRecursive(root.GetChild(i), childName);
+            if (found != null)
+            {
+                return found;
+            }
+        }
+
+        return null;
     }
 }

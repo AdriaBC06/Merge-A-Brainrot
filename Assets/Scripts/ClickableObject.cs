@@ -7,6 +7,7 @@ public class ClickableObject : MonoBehaviour
     private const float BaseAutoClickInterval = 10f;
     private const float MinAutoClickInterval = 1f;
     private static float globalAutoClickReduction;
+    private static float globalMoneyMultiplier = 1f;
     private float autoClickInterval;
     private float autoClickTimer;
 
@@ -58,10 +59,20 @@ public class ClickableObject : MonoBehaviour
         }
     }
 
+    public static void IncreaseGlobalMoneyMultiplier(float amount)
+    {
+        if (amount <= 0f)
+        {
+            return;
+        }
+
+        globalMoneyMultiplier += amount;
+    }
+
     private void TriggerClickBehavior()
     {
         int stage = fusion ? fusion.GetStage() : 1;
-        float money = 10f * Mathf.Pow(2f, stage - 1);
+        float money = 10f * Mathf.Pow(2f, stage - 1) * globalMoneyMultiplier;
         GameManager gameManager = GameManager.Instance ?? FindFirstObjectByType<GameManager>();
     
         if (gameManager == null)
