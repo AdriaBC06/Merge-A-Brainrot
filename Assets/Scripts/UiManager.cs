@@ -8,7 +8,7 @@ public class UIManager : MonoBehaviour
     public TextMeshProUGUI moneyText;
     [Header("Canvas Ordering")]
     [SerializeField] private Canvas mainCanvas;
-    [SerializeField] private int canvasSortingOrder = 10;
+    [SerializeField] private int canvasSortingOrder = -10;
 
     private void Awake()
     {
@@ -31,16 +31,8 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-        // Keep UI visible by default and only assign camera mode if a main camera exists.
-        if (Camera.main != null)
-        {
-            mainCanvas.renderMode = RenderMode.ScreenSpaceCamera;
-            mainCanvas.worldCamera = Camera.main;
-        }
-        else
-        {
-            mainCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        }
+        mainCanvas.renderMode = RenderMode.ScreenSpaceCamera;
+        mainCanvas.worldCamera = Camera.main;
         mainCanvas.overrideSorting = true;
         mainCanvas.sortingOrder = canvasSortingOrder;
     }
