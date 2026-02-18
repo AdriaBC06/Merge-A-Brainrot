@@ -58,11 +58,7 @@ public class GameManager : MonoBehaviour
     private void SpawnBrainrot()
     {
         EnsureContainers();
-        if (screen1Container == null)
-        {
-            Debug.LogWarning("Screen1 Brainrots container not found in scene. Spawn aborted.");
-            return;
-        }
+        Transform targetContainer = screen1Container != null ? screen1Container : transform;
 
         const int maxAttempts = 10;
         Vector3 spawnPos = Vector3.zero;
@@ -77,7 +73,7 @@ public class GameManager : MonoBehaviour
             if (Physics2D.OverlapCircle(pos, 1.2f) == null)
             {
                 spawnPos = new Vector3(x, y, 0);
-                Instantiate(brainrotPrefab, spawnPos, Quaternion.identity, screen1Container);
+                Instantiate(brainrotPrefab, spawnPos, Quaternion.identity, targetContainer);
                 
                 int total = Object.FindObjectsByType<FusionObject>(FindObjectsInactive.Exclude, FindObjectsSortMode.None).Length;
                 Debug.Log($"Brainrot spawneado en {spawnPos} | Total en escena: {total}");
@@ -89,7 +85,7 @@ public class GameManager : MonoBehaviour
         float fallbackX = Random.Range(-6f, 6f);
         float fallbackY = Random.Range(-4f, 4f);
         spawnPos = new Vector3(fallbackX, fallbackY, 0);
-        Instantiate(brainrotPrefab, spawnPos, Quaternion.identity, screen1Container);
+        Instantiate(brainrotPrefab, spawnPos, Quaternion.identity, targetContainer);
     }
 
     public void AddMoney(float amount)
@@ -146,7 +142,9 @@ public class GameManager : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning($"Scene object '{screen1Name}' not found. Please use MainGameScene > {screen1Name}.");
+                GameObject created = new GameObject(screen1Name);
+                screen1Container = created.transform;
+                Debug.LogWarning($"Scene object '{screen1Name}' not found. Created fallback container at runtime.");
             }
         }
 
@@ -159,7 +157,10 @@ public class GameManager : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning($"Scene object '{screen2Name}' not found. Please use MainGameScene > {screen2Name}.");
+                GameObject created = new GameObject(screen2Name);
+                screen2Container = created.transform;
+                created.SetActive(false);
+                Debug.LogWarning($"Scene object '{screen2Name}' not found. Created fallback container at runtime.");
             }
         }
 
