@@ -11,9 +11,11 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject brainrotPrefab;
     [SerializeField] public GameObject coinPrefab;  
     [SerializeField] private float spawnInterval = 10f; 
+    [SerializeField] private bool autoSpawnEnabled = false;
     [SerializeField] private int maxObjects = 12; 
     [SerializeField] private float spawnZ = -1f;
     private float spawnTimer;
+    private bool initialBrainrotSpawned;
 
     [Header("World Containers")]
     [SerializeField] private string screen1Name = "Screen1 Brainrots";
@@ -38,9 +40,14 @@ public class GameManager : MonoBehaviour
         InitChangeWorldButton();
     }
 
+    private void Start()
+    {
+        SpawnInitialBrainrot();
+    }
+
     private void Update()
     {
-        if (brainrotPrefab == null) return;
+        if (!autoSpawnEnabled || brainrotPrefab == null) return;
 
         spawnTimer += Time.deltaTime;
         if (spawnTimer >= spawnInterval)
@@ -92,11 +99,66 @@ public class GameManager : MonoBehaviour
         Instantiate(brainrotPrefab, spawnPos, Quaternion.identity, screen1Container);
     }
 
+    private void SpawnInitialBrainrot()
+    {
+        if (initialBrainrotSpawned || brainrotPrefab == null)
+        {
+            return;
+        }
+
+        initialBrainrotSpawned = true;
+        SpawnBrainrot();
+    }
+
     public void AddMoney(float amount)
     {
         currentMoney += amount;
         Debug.Log($"Dinero: {currentMoney}");
         UIManager.Instance?.UpdateMoney(currentMoney);
+    }
+
+    public bool TrySpendMoney(float amount)
+    {
+        if (amount <= 0f)
+        {
+            return true;
+        }
+
+        if (currentMoney < amount)
+        {
+            return false;
+        }
+
+        currentMoney -= amount;
+        UIManager.Instance?.UpdateMoney(currentMoney);
+        return true;
+    }
+
+    public bool IsAutoSpawnEnabled()
+    {
+        return autoSpawnEnabled;
+    }
+
+    public float GetSpawnInterval()
+    {
+        return spawnInterval;
+    }
+
+    public void EnableAutoSpawn(float intervalSeconds)
+    {
+        autoSpawnEnabled = true;
+        spawnInterval = Mathf.Max(1f, intervalSeconds);
+        spawnTimer = 0f;
+    }
+
+    public void ReduceSpawnInterval(float reductionAmount)
+    {
+        if (reductionAmount <= 0f)
+        {
+            return;
+        }
+
+        spawnInterval = Mathf.Max(1f, spawnInterval - reductionAmount);
     }
 
     public void RegisterBrainrot(FusionObject brainrot)

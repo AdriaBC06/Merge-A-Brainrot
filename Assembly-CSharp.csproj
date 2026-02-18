@@ -48,6 +48,7 @@
     <Analyzer Include="/home/adria/Unity/Hub/Editor/6000.0.63f1/Editor/Data/Tools/Unity.SourceGenerators/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets/Scripts/CanvasMejorasController.cs" />
     <Compile Include="Assets/Space_Exploration_GUI_Kit/Scripts/Toggle.cs" />
     <Compile Include="Assets/Scripts/Drag2D.cs" />
     <Compile Include="Assets/Scripts/ChangeWorld.cs" />

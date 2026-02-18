@@ -4,53 +4,112 @@ public class ClickableObject : MonoBehaviour
 {
     private FusionObject fusion;
     private Vector3 originalScale;
+    private const float BaseAutoClickInterval = 10f;
+    private const float MinAutoClickInterval = 1f;
+    private static float globalAutoClickReduction;
+    private float autoClickInterval;
+    private float autoClickTimer;
 
     private void Awake()
     {
         fusion = GetComponent<FusionObject>();
         originalScale = transform.localScale;
+        RefreshAutoClickInterval();
+        autoClickTimer = autoClickInterval;
+    }
+
+    private void Update()
+    {
+        DecreaseTimerInternal(Time.deltaTime);
     }
 
     private void OnMouseDown()
     {
+        TriggerClickBehavior();
+    }
+
+    public void DecreaseAutoClickTimer(float amount)
+    {
+        if (amount <= 0f)
+        {
+            return;
+        }
+
+        DecreaseTimerInternal(amount);
+    }
+
+    public static void ApplyGlobalAutoClickUpgrade(float reductionAmount)
+    {
+        if (reductionAmount <= 0f)
+        {
+            return;
+        }
+
+        globalAutoClickReduction += reductionAmount;
+
+        ClickableObject[] clickableObjects = FindObjectsByType<ClickableObject>(
+            FindObjectsInactive.Exclude,
+            FindObjectsSortMode.None
+        );
+
+        foreach (ClickableObject clickableObject in clickableObjects)
+        {
+            clickableObject.RefreshAutoClickInterval();
+        }
+    }
+
+    private void TriggerClickBehavior()
+    {
         int stage = fusion ? fusion.GetStage() : 1;
         float money = 10f * Mathf.Pow(2f, stage - 1);
+        GameManager gameManager = GameManager.Instance ?? FindFirstObjectByType<GameManager>();
     
-        if (GameManager.Instance == null)
+        if (gameManager == null)
         {
-            var gm = FindFirstObjectByType<GameManager>();
-            if (gm != null)
-            {
-                gm.AddMoney(money);
-            }
-            else
-            {
-                return;
-            }
+            return;
         }
-        else
-        {
-            GameManager.Instance.AddMoney(money);
-        }
+
+        gameManager.AddMoney(money);
 
         transform.localScale = originalScale * 1.15f;
         Invoke(nameof(ResetScale), 0.12f);
 
-        if (GameManager.Instance.coinPrefab != null)
+        if (gameManager.coinPrefab != null)
         {
-        GameObject coin = Instantiate(
-            GameManager.Instance.coinPrefab, 
-            transform.position + Vector3.up * 0.5f, 
-            Quaternion.identity
-        );
+            GameObject coin = Instantiate(
+                gameManager.coinPrefab, 
+                transform.position + Vector3.up * 0.5f, 
+                Quaternion.identity
+            );
 
-        Debug.Log("Moneda creada en posición: " + coin.transform.position);
+            Debug.Log("Moneda creada en posición: " + coin.transform.position);
 
-        Coin coinScript = coin.GetComponent<Coin>();
-        if (coinScript != null)
-        {
-            coinScript.speed = 4f; 
+            Coin coinScript = coin.GetComponent<Coin>();
+            if (coinScript != null)
+            {
+                coinScript.speed = 4f; 
+            }
         }
+    }
+
+    private void DecreaseTimerInternal(float amount)
+    {
+        autoClickTimer -= amount;
+
+        while (autoClickTimer <= 0f)
+        {
+            TriggerClickBehavior();
+            autoClickTimer += autoClickInterval;
+        }
+    }
+
+    private void RefreshAutoClickInterval()
+    {
+        autoClickInterval = Mathf.Max(MinAutoClickInterval, BaseAutoClickInterval - globalAutoClickReduction);
+
+        if (autoClickTimer > autoClickInterval)
+        {
+            autoClickTimer = autoClickInterval;
         }
     }
 
