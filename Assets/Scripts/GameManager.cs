@@ -15,6 +15,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject brainrotPrefab;
     [SerializeField] public GameObject coinPrefab;
     [SerializeField] private float spawnInterval = 10f;
+    [SerializeField] private bool autoSpawnEnabled = true;
     [SerializeField] private int maxObjects = 12;
     [SerializeField] private float spawnZ = -1f;
     [SerializeField] private bool spawnInitialBrainrotOnSceneLoad = true;
@@ -66,6 +67,7 @@ public class GameManager : MonoBehaviour
     private void Update()
     {
         if (brainrotPrefab == null) return;
+        if (!autoSpawnEnabled) return;
 
         spawnTimer += Time.deltaTime;
         if (spawnTimer >= spawnInterval)
@@ -153,6 +155,38 @@ public class GameManager : MonoBehaviour
         currentMoney += amount;
         Debug.Log($"Dinero: {currentMoney}");
         UIManager.Instance?.UpdateMoney(currentMoney);
+    }
+
+    public bool TrySpendMoney(float amount)
+    {
+        if (amount <= 0f) return true;
+        if (currentMoney < amount) return false;
+
+        currentMoney -= amount;
+        UIManager.Instance?.UpdateMoney(currentMoney);
+        return true;
+    }
+
+    public bool IsAutoSpawnEnabled()
+    {
+        return autoSpawnEnabled;
+    }
+
+    public float GetSpawnInterval()
+    {
+        return spawnInterval;
+    }
+
+    public void EnableAutoSpawn(float interval)
+    {
+        autoSpawnEnabled = true;
+        spawnInterval = Mathf.Max(1f, interval);
+    }
+
+    public void ReduceSpawnInterval(float reduction)
+    {
+        if (reduction <= 0f) return;
+        spawnInterval = Mathf.Max(1f, spawnInterval - reduction);
     }
 
     public void RegisterBrainrot(FusionObject brainrot)
