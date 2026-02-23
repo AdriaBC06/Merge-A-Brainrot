@@ -28,6 +28,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private string runtimeScreen1Name = "__Screen1BrainrotsRuntime";
     [SerializeField] private string runtimeScreen2Name = "__Screen2BrainrotsRuntime";
     [SerializeField] private GameObject changeWorldButton;
+    [SerializeField] private int changeWorldUnlockStage = 11;
     private Transform screen1Container;
     private Transform screen2Container;
     private bool changeWorldUnlocked = false;
@@ -194,12 +195,12 @@ public class GameManager : MonoBehaviour
         if (brainrot == null) return;
         EnsureContainers();
         TrackHighestStage(brainrot.stage);
+        TryUnlockChangeWorldForStage(brainrot.stage);
 
         if (brainrot.stage >= 11)
         {
             MoveToScreen2(brainrot);
             AutoSwitchToScreen2();
-            UnlockChangeWorld();
         }
         else
         {
@@ -212,10 +213,10 @@ public class GameManager : MonoBehaviour
         if (brainrot == null) return;
         EnsureContainers();
         TrackHighestStage(newStage);
+        TryUnlockChangeWorldForStage(newStage);
 
         if (newStage >= 11)
         {
-            UnlockChangeWorld();
             MoveToScreen2(brainrot);
             AutoSwitchToScreen2();
         }
@@ -366,7 +367,7 @@ public class GameManager : MonoBehaviour
     {
         if (changeWorldButton == null)
         {
-            GameObject found = GameObject.Find("Change World Button");
+            GameObject found = FindSceneObjectByName("Change World Button");
             if (found != null) changeWorldButton = found;
         }
 
@@ -388,6 +389,8 @@ public class GameManager : MonoBehaviour
                 Debug.LogWarning("Change World Button is missing a Button component.");
             }
 
+            // Keep the button above other UI elements so it stays visible in both worlds.
+            changeWorldButton.transform.SetAsLastSibling();
             changeWorldButton.SetActive(changeWorldUnlocked);
         }
     }
@@ -402,6 +405,15 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    private void TryUnlockChangeWorldForStage(int stage)
+    {
+        int unlockStage = Mathf.Max(1, changeWorldUnlockStage);
+        if (stage > unlockStage)
+        {
+            UnlockChangeWorld();
+        }
+    }
+
     private void AutoSwitchToScreen2()
     {
         showingScreen1 = false;
@@ -412,6 +424,11 @@ public class GameManager : MonoBehaviour
     {
         if (screen1Container != null) screen1Container.gameObject.SetActive(showingScreen1);
         if (screen2Container != null) screen2Container.gameObject.SetActive(!showingScreen1);
+        if (changeWorldButton != null)
+        {
+            changeWorldButton.transform.SetAsLastSibling();
+            changeWorldButton.SetActive(changeWorldUnlocked);
+        }
     }
 
     private void MoveToScreen2(FusionObject brainrot)
