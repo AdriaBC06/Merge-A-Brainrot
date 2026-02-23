@@ -27,21 +27,26 @@ namespace SpaceGUI
         }
         public void On()
         {
-            index = 1;
-            second.gameObject.SetActive(true);
-            first.gameObject.SetActive(false);
-            third.gameObject.SetActive(true);
-            fourth.gameObject.SetActive(false);
-            SettingsManager.SetFullscreen(true);
+            SetState(true, true);
         }
         public void Off()
         {
-            index = 0;
-            first.gameObject.SetActive(true);
-            second.gameObject.SetActive(false);
-            third.gameObject.SetActive(false);
-            fourth.gameObject.SetActive(true);
-            SettingsManager.SetFullscreen(false);
+            SetState(false, true);
+        }
+
+        public void SetState(bool enabled, bool playSound)
+        {
+            index = enabled ? 1 : 0;
+            second.gameObject.SetActive(enabled);
+            first.gameObject.SetActive(!enabled);
+            third.gameObject.SetActive(enabled);
+            fourth.gameObject.SetActive(!enabled);
+            SettingsManager.SetMusicMuted(!enabled);
+
+            if (playSound)
+            {
+                SoundManager.Instance?.PlayClick();
+            }
         }
     }
 }

@@ -1,13 +1,27 @@
+using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class CanvasMejorasController : MonoBehaviour
+public partial class CanvasMejorasController : MonoBehaviour
 {
     [Header("Panel Controls")]
     [SerializeField] private GameObject panel;
     [SerializeField] private Button botonMejorasButton;
     [SerializeField] private Button cerrarButton;
+
+    [Header("Overlay")]
+    [SerializeField] private GameObject overlay;
+    [SerializeField] private int mejorasCanvasSortingOrder = 120;
+    [SerializeField, Range(0f, 1f)] private float overlayDimAlpha = 0.55f;
+
+    [Header("Layout")]
+    [SerializeField] private RectTransform panelRect;
+    [SerializeField] private RectTransform itemsRoot;
+    [SerializeField] private Vector2 itemSize = new Vector2(740f, 72f);
+    [SerializeField] private float topPadding = 18f;
+    [SerializeField] private float itemSpacing = 10f;
 
     [Header("Auto Click Upgrade")]
     [SerializeField] private Button autoClickUpgradeButton;
@@ -30,51 +44,81 @@ public class CanvasMejorasController : MonoBehaviour
     [SerializeField] private TextMeshProUGUI coinMultiplierPriceText;
     [SerializeField] private int coinMultiplierInitialPrice = 100;
     [SerializeField] private float coinMultiplierPriceMultiplier = 2f;
-    [SerializeField] private float coinMultiplierIncreasePerPurchase = 0.5f;
+    [SerializeField] private float coinMultiplierIncreasePerPurchase = 0.2f;
 
     private int autoClickPurchases;
     private int autoClickCurrentPrice;
     private int autoSpawnCurrentPrice;
     private int coinMultiplierCurrentPrice;
+    private int coinMultiplierPurchases;
+
+    private readonly List<UpgradeEntry> entries = new List<UpgradeEntry>();
+
+    private Canvas hostCanvas;
+    private int hostCanvasInitialSortingOrder;
+    private Canvas overlayCanvas;
+
+    private ScrollRect itemsScrollRect;
+    private RectTransform itemsContent;
+
+    private Color overlayBackgroundColor = FallbackOverlayColor;
+    private Color panelBackgroundColor = FallbackPanelColor;
+    private Color entryBackgroundColor = FallbackEntryColor;
+
+    private ShopPanelController shopController;
+
+    private static readonly Color FallbackOverlayColor = new Color(0f, 0f, 0f, 0.72f);
+    private static readonly Color FallbackPanelColor = new Color(0.11f, 0.15f, 0.22f, 0.98f);
+    private static readonly Color FallbackEntryColor = new Color(0.13f, 0.26f, 0.34f, 0.95f);
+
+    private enum UpgradeId
+    {
+        AutoClick,
+        AutoSpawn,
+        CoinMultiplier
+    }
+
+    private sealed class UpgradeEntry
+    {
+        public UpgradeId id;
+        public GameObject rootObject;
+        public RectTransform rectTransform;
+        public Image backgroundImage;
+        public Button buyButton;
+        public Image iconImage;
+        public TextMeshProUGUI titleText;
+        public TextMeshProUGUI priceText;
+    }
+
+    [Serializable]
+    public struct UpgradeSaveData
+    {
+        public int autoClickPurchases;
+        public int autoClickCurrentPrice;
+        public int autoSpawnCurrentPrice;
+        public int coinMultiplierCurrentPrice;
+        public int coinMultiplierPurchases;
+    }
 
     private void Awake()
     {
+        EnsureUpgradesIcon();
+        EnsureOverlay();
         AutoAssignReferences();
+        EnsureOverlayHierarchy();
+        CacheHostCanvas();
+        EnsurePanelLayout();
+        EnsureScrollSetup();
+        ApplyShopStyle();
+        CacheShopController();
         InitializeUpgradeState();
-
-        if (botonMejorasButton != null)
-        {
-            botonMejorasButton.onClick.RemoveListener(TogglePanel);
-            botonMejorasButton.onClick.AddListener(TogglePanel);
-        }
-
-        if (cerrarButton != null)
-        {
-            cerrarButton.onClick.RemoveListener(ClosePanel);
-            cerrarButton.onClick.AddListener(ClosePanel);
-        }
-
-        if (autoClickUpgradeButton != null)
-        {
-            autoClickUpgradeButton.onClick.RemoveListener(BuyAutoClickUpgrade);
-            autoClickUpgradeButton.onClick.AddListener(BuyAutoClickUpgrade);
-        }
-
-        if (autoSpawnUpgradeButton != null)
-        {
-            autoSpawnUpgradeButton.onClick.RemoveListener(BuyAutoSpawnUpgrade);
-            autoSpawnUpgradeButton.onClick.AddListener(BuyAutoSpawnUpgrade);
-        }
-
-        if (coinMultiplierUpgradeButton != null)
-        {
-            coinMultiplierUpgradeButton.onClick.RemoveListener(BuyCoinMultiplierUpgrade);
-            coinMultiplierUpgradeButton.onClick.AddListener(BuyCoinMultiplierUpgrade);
-        }
+        RebuildEntries();
+        BindButtons();
+        DisableLegacyPanel();
 
         if (panel != null)
         {
-            panel.SetActive(false);
+            SetPanelState(false);
         }
         else
         {
@@ -89,6 +133,55 @@ public class CanvasMejorasController : MonoBehaviour
         UpdateAutoClickPriceText();
         UpdateAutoSpawnPriceText();
         UpdateCoinMultiplierPriceText();
+
+        GameManager.Instance?.ApplySavedUpgradesIfReady();
+    }
+
+    public Button GetCloseButton()
+    {
+        return cerrarButton;
+    }
+
+    public Button GetOpenButton()
+    {
+        return botonMejorasButton;
+    }
+
+    public UpgradeSaveData GetUpgradeSaveData()
+    {
+        return new UpgradeSaveData
+        {
+            autoClickPurchases = autoClickPurchases,
+            autoClickCurrentPrice = autoClickCurrentPrice,
+            autoSpawnCurrentPrice = autoSpawnCurrentPrice,
+            coinMultiplierCurrentPrice = coinMultiplierCurrentPrice,
+            coinMultiplierPurchases = coinMultiplierPurchases
+        };
+    }
+
+    public void ApplyUpgradeSaveData(UpgradeSaveData data)
+    {
+        autoClickPurchases = Mathf.Clamp(data.autoClickPurchases, 0, autoClickMaxPurchases);
+        autoClickCurrentPrice = Mathf.Max(1, data.autoClickCurrentPrice);
+        autoSpawnCurrentPrice = Mathf.Max(1, data.autoSpawnCurrentPrice);
+        coinMultiplierCurrentPrice = Mathf.Max(1, data.coinMultiplierCurrentPrice);
+        coinMultiplierPurchases = Mathf.Max(0, data.coinMultiplierPurchases);
+
+        UpdateAutoClickPriceText();
+        UpdateAutoSpawnPriceText();
+        UpdateCoinMultiplierPriceText();
+    }
+
+    public bool IsOpen => panel != null && panel.activeSelf;
+
+    public void OpenPanel()
+    {
+        SetPanelState(true);
+    }
+
+    public void ClosePanelPublic()
+    {
+        SetPanelState(false);
     }
 
     private void InitializeUpgradeState()
@@ -102,16 +195,83 @@ public class CanvasMejorasController : MonoBehaviour
     {
         if (panel == null)
         {
-            Transform panelTransform = FindChildRecursive(transform, "Panel");
+            Transform panelTransform = null;
+            if (overlay != null)
+            {
+                panelTransform = overlay.transform.Find("Upgrades_Panel");
+                if (panelTransform == null)
+                {
+                    panelTransform = overlay.transform.Find("Shop_Panel");
+                }
+            }
+            if (panelTransform == null)
+            {
+                panelTransform = FindChildRecursive(transform, "Upgrades_Panel");
+            }
+            if (panelTransform == null)
+            {
+                panelTransform = FindChildRecursive(transform, "Panel Mejoras");
+            }
+            if (panelTransform == null)
+            {
+                panelTransform = FindChildRecursive(transform, "Panel");
+            }
             if (panelTransform != null)
             {
                 panel = panelTransform.gameObject;
             }
         }
 
+        if (panelRect == null && panel != null)
+        {
+            panelRect = panel.GetComponent<RectTransform>();
+        }
+
+        if (overlay == null)
+        {
+            Transform overlayTransform = FindTransformByName("Upgrades_Overlay");
+            if (overlayTransform == null)
+            {
+                overlayTransform = FindChildRecursive(transform, "Upgrades_Overlay");
+            }
+            if (overlayTransform == null)
+            {
+                overlayTransform = FindChildRecursive(transform, "Mejoras_Overlay");
+            }
+            if (overlayTransform != null)
+            {
+                overlay = overlayTransform.gameObject;
+            }
+        }
+
+        if (itemsRoot == null && panel != null)
+        {
+            Transform found = panel.transform.Find("Upgrades_ItemsRoot");
+            if (found == null)
+            {
+                found = panel.transform.Find("Shop_ItemsRoot");
+            }
+            if (found == null)
+            {
+                found = panel.transform.Find("Mejoras_ItemsRoot");
+            }
+            if (found != null)
+            {
+                itemsRoot = found as RectTransform;
+            }
+        }
+
         if (botonMejorasButton == null)
         {
-            Transform botonMejorasTransform = FindChildRecursive(transform, "BotonMejoras");
+            Transform botonMejorasTransform = FindChildRecursive(transform, "Upgrades_Icon");
+            if (botonMejorasTransform == null)
+            {
+                botonMejorasTransform = FindChildRecursive(transform, "Mejoras");
+            }
+            if (botonMejorasTransform == null)
+            {
+                botonMejorasTransform = FindChildRecursive(transform, "BotonMejoras");
+            }
             if (botonMejorasTransform != null)
             {
                 botonMejorasButton = botonMejorasTransform.GetComponent<Button>() ??
@@ -127,6 +287,10 @@ public class CanvasMejorasController : MonoBehaviour
         if (cerrarButton == null)
         {
             Transform cerrarTransform = FindChildRecursive(panel.transform, "Cerrar");
+            if (cerrarTransform == null)
+            {
+                cerrarTransform = FindChildRecursive(panel.transform, "Close_Button");
+            }
             if (cerrarTransform != null)
             {
                 cerrarButton = cerrarTransform.GetComponent<Button>() ??
@@ -205,6 +369,46 @@ public class CanvasMejorasController : MonoBehaviour
         }
     }
 
+    private void BindButtons()
+    {
+        if (botonMejorasButton != null)
+        {
+            botonMejorasButton.onClick.RemoveListener(TogglePanel);
+            botonMejorasButton.onClick.AddListener(TogglePanel);
+        }
+
+        if (cerrarButton != null)
+        {
+            cerrarButton.onClick.RemoveListener(ClosePanel);
+            cerrarButton.onClick.AddListener(ClosePanel);
+        }
+
+        if (autoClickUpgradeButton != null)
+        {
+            autoClickUpgradeButton.onClick.RemoveListener(BuyAutoClickUpgrade);
+            autoClickUpgradeButton.onClick.AddListener(BuyAutoClickUpgrade);
+        }
+
+        if (autoSpawnUpgradeButton != null)
+        {
+            autoSpawnUpgradeButton.onClick.RemoveListener(BuyAutoSpawnUpgrade);
+            autoSpawnUpgradeButton.onClick.AddListener(BuyAutoSpawnUpgrade);
+        }
+
+        if (coinMultiplierUpgradeButton != null)
+        {
+            coinMultiplierUpgradeButton.onClick.RemoveListener(BuyCoinMultiplierUpgrade);
+            coinMultiplierUpgradeButton.onClick.AddListener(BuyCoinMultiplierUpgrade);
+        }
+    }
+
+    private void CacheShopController()
+    {
+        if (shopController != null) return;
+        shopController = FindFirstObjectByType<ShopPanelController>();
+    }
+
+
     private void OnDestroy()
     {
         if (botonMejorasButton != null)
@@ -240,21 +444,20 @@ public class CanvasMejorasController : MonoBehaviour
             return;
         }
 
-        panel.SetActive(!panel.activeSelf);
+        SoundManager.Instance?.PlayClick();
+        bool opening = !panel.activeSelf;
+        SetPanelState(opening);
     }
 
     private void ClosePanel()
     {
-        if (panel == null)
-        {
-            return;
-        }
-
-        panel.SetActive(false);
+        SoundManager.Instance?.PlayClick();
+        SetPanelState(false);
     }
 
     private void BuyAutoClickUpgrade()
     {
+        SoundManager.Instance?.PlayClick();
         if (autoClickPurchases >= autoClickMaxPurchases)
         {
             UpdateAutoClickPriceText();
@@ -272,6 +475,7 @@ public class CanvasMejorasController : MonoBehaviour
             return;
         }
 
+        SoundManager.Instance?.PlayPurchase();
         autoClickPurchases++;
         ClickableObject.ApplyGlobalAutoClickUpgrade(autoClickReductionPerPurchase);
 
@@ -289,6 +493,7 @@ public class CanvasMejorasController : MonoBehaviour
 
     private void BuyAutoSpawnUpgrade()
     {
+        SoundManager.Instance?.PlayClick();
         GameManager gameManager = GameManager.Instance ?? FindFirstObjectByType<GameManager>();
         if (gameManager == null)
         {
@@ -306,6 +511,7 @@ public class CanvasMejorasController : MonoBehaviour
             return;
         }
 
+        SoundManager.Instance?.PlayPurchase();
         if (!gameManager.IsAutoSpawnEnabled())
         {
             gameManager.EnableAutoSpawn(autoSpawnInitialInterval);
@@ -329,6 +535,7 @@ public class CanvasMejorasController : MonoBehaviour
 
     private void BuyCoinMultiplierUpgrade()
     {
+        SoundManager.Instance?.PlayClick();
         GameManager gameManager = GameManager.Instance ?? FindFirstObjectByType<GameManager>();
         if (gameManager == null)
         {
@@ -340,7 +547,10 @@ public class CanvasMejorasController : MonoBehaviour
             return;
         }
 
-        ClickableObject.IncreaseGlobalMoneyMultiplier(coinMultiplierIncreasePerPurchase);
+        SoundManager.Instance?.PlayPurchase();
+        float scaledIncrease = coinMultiplierIncreasePerPurchase / (1f + coinMultiplierPurchases * 0.2f);
+        ClickableObject.IncreaseGlobalMoneyMultiplier(scaledIncrease);
+        coinMultiplierPurchases++;
         coinMultiplierCurrentPrice = MultiplyPrice(coinMultiplierCurrentPrice, coinMultiplierPriceMultiplier);
         UpdateCoinMultiplierPriceText();
     }
@@ -408,29 +618,5 @@ public class CanvasMejorasController : MonoBehaviour
     {
         float safeMultiplier = Mathf.Max(1f, multiplier);
         return Mathf.Max(1, Mathf.CeilToInt(currentPrice * safeMultiplier));
-    }
-
-    private Transform FindChildRecursive(Transform root, string childName)
-    {
-        if (root == null)
-        {
-            return null;
-        }
-
-        if (root.name == childName)
-        {
-            return root;
-        }
-
-        for (int i = 0; i < root.childCount; i++)
-        {
-            Transform found = FindChildRecursive(root.GetChild(i), childName);
-            if (found != null)
-            {
-                return found;
-            }
-        }
-
-        return null;
     }
 }

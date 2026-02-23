@@ -57,6 +57,7 @@ public class FusionObject : MonoBehaviour
         stage++;
         UpdateSprite();
         GameManager.Instance?.OnBrainrotStageChanged(this, stage);
+        SoundManager.Instance?.PlayFusion();
         StartCoroutine(FusionAnimation());
     }
 

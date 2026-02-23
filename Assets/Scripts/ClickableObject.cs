@@ -6,6 +6,9 @@ public class ClickableObject : MonoBehaviour
     private Vector3 originalScale;
     private const float BaseAutoClickInterval = 10f;
     private const float MinAutoClickInterval = 1f;
+    private const float BaseMoneyPerClick = 12f;
+    private const float StageLinearGrowth = 0.7f;
+    private const float StageQuadraticGrowth = 0.07f;
     private static float globalAutoClickReduction;
     private static float globalMoneyMultiplier = 1f;
     private float autoClickInterval;
@@ -26,6 +29,7 @@ public class ClickableObject : MonoBehaviour
 
     private void OnMouseDown()
     {
+        SoundManager.Instance?.PlayClick();
         TriggerClickBehavior();
     }
 
@@ -69,10 +73,42 @@ public class ClickableObject : MonoBehaviour
         globalMoneyMultiplier += amount;
     }
 
+    public static float GetGlobalMoneyMultiplier()
+    {
+        return globalMoneyMultiplier;
+    }
+
+    public static void SetGlobalMoneyMultiplier(float value)
+    {
+        globalMoneyMultiplier = Mathf.Max(0.1f, value);
+    }
+
+    public static float GetGlobalAutoClickReduction()
+    {
+        return globalAutoClickReduction;
+    }
+
+    public static void SetGlobalAutoClickReduction(float value)
+    {
+        globalAutoClickReduction = Mathf.Max(0f, value);
+
+        ClickableObject[] clickableObjects = FindObjectsByType<ClickableObject>(
+            FindObjectsInactive.Exclude,
+            FindObjectsSortMode.None
+        );
+
+        foreach (ClickableObject clickableObject in clickableObjects)
+        {
+            clickableObject.RefreshAutoClickInterval();
+        }
+    }
+
     private void TriggerClickBehavior()
     {
         int stage = fusion ? fusion.GetStage() : 1;
-        float money = 10f * Mathf.Pow(2f, stage - 1) * globalMoneyMultiplier;
+        int stageIndex = Mathf.Max(0, stage - 1);
+        float stageFactor = 1f + stageIndex * StageLinearGrowth + stageIndex * stageIndex * StageQuadraticGrowth;
+        int money = Mathf.RoundToInt(BaseMoneyPerClick * stageFactor * globalMoneyMultiplier);
         GameManager gameManager = GameManager.Instance ?? FindFirstObjectByType<GameManager>();
     
         if (gameManager == null)
@@ -94,6 +130,7 @@ public class ClickableObject : MonoBehaviour
             );
 
             Debug.Log("Moneda creada en posición: " + coin.transform.position);
+            SoundManager.Instance?.PlayCoin();
 
             Coin coinScript = coin.GetComponent<Coin>();
             if (coinScript != null)

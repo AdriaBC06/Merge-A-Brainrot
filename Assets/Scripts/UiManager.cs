@@ -30,6 +30,10 @@ public class UIManager : MonoBehaviour
         EnsureBackgroundDefaults();
         EnsureHomeButtonBinding();
         HideHomeNotificationDot();
+        if (GameManager.Instance != null)
+        {
+            UpdateMoney(GameManager.Instance.currentMoney);
+        }
     }
 
     private void EnsureBackgroundDefaults()
@@ -128,16 +132,20 @@ public class UIManager : MonoBehaviour
 
     public void OnStartPress()
     {
+        SoundManager.Instance?.PlayClick();
         SceneManager.LoadScene(2);
     }
 
     public void OnSettingsPress()
     {
+        SoundManager.Instance?.PlayClick();
         SettingsManager.SettingsOpen();
     }
 
     public void OnHomePress()
     {
+        SoundManager.Instance?.PlayClick();
+        GameManager.Instance?.RequestSave();
         if (Application.CanStreamedLevelBeLoaded(mainMenuSceneName))
         {
             SceneManager.LoadScene(mainMenuSceneName);

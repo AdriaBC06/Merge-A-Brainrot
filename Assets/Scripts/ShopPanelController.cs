@@ -12,13 +12,14 @@ public class ShopPanelController : MonoBehaviour
     [SerializeField] private RectTransform shopPanel;
     [SerializeField] private RectTransform itemsRoot;
     [SerializeField] private bool hideOverlayOnAwake = true;
+    [SerializeField, Range(0f, 1f)] private float overlayDimAlpha = 0.55f;
 
     [Header("Visual Layer")]
     [SerializeField] private int shopCanvasSortingOrder = 120;
 
     [Header("Pricing")]
     [SerializeField] private int basePrice = 25;
-    [SerializeField] private float priceMultiplier = 2f;
+    [SerializeField] private int priceIncrement = 10;
 
     [Header("Layout")]
     [SerializeField] private Vector2 itemSize = new Vector2(740f, 72f);
@@ -31,10 +32,35 @@ public class ShopPanelController : MonoBehaviour
 
     private Canvas hostCanvas;
     private int hostCanvasInitialSortingOrder;
-    private bool hostCanvasCached;
+    private Canvas overlayCanvas;
 
     private ScrollRect itemsScrollRect;
     private RectTransform itemsContent;
+
+    public bool IsOpen
+    {
+        get
+        {
+            if (shopPanel != null)
+            {
+                return shopPanel.gameObject.activeSelf;
+            }
+
+            return shopOverlay != null && shopOverlay.activeSelf;
+        }
+    }
+
+    [Header("Mejoras Layer")]
+    [SerializeField] private Canvas mejorasCanvas;
+
+    private int mejorasCanvasInitialSortingOrder;
+
+    private Button mejorasOpenButton;
+    private Transform shopIconTransform;
+    private Transform mejorasIconTransform;
+
+    private readonly List<Button> homeButtons = new List<Button>();
+    private readonly Dictionary<Image, Color> originalIconColors = new Dictionary<Image, Color>();
 
     private sealed class ShopEntry
     {
@@ -53,12 +79,20 @@ public class ShopPanelController : MonoBehaviour
     {
         AutoAssignReferences();
         CacheHostCanvas();
+        CacheMejorasCanvas();
+        CacheMejorasOpenButton();
+        CacheHomeButtons();
+        CacheIconTransforms();
         EnsureScrollSetup();
         BindButtons();
-
         if (hideOverlayOnAwake && shopOverlay != null)
         {
             shopOverlay.SetActive(false);
+        }
+
+        if (hideOverlayOnAwake && shopPanel != null)
+        {
+            shopPanel.gameObject.SetActive(false);
         }
     }
 
@@ -73,12 +107,21 @@ public class ShopPanelController : MonoBehaviour
     {
         if (shopButton != null)
         {
-            shopButton.onClick.RemoveListener(OpenShop);
+            shopButton.onClick.RemoveListener(OnShopButtonPressed);
         }
 
         if (closeButton != null)
         {
-            closeButton.onClick.RemoveListener(CloseShop);
+            closeButton.onClick.RemoveListener(OnCloseButtonPressed);
+        }
+
+        if (homeButtons.Count > 0)
+        {
+            foreach (Button button in homeButtons)
+            {
+                if (button == null) continue;
+                button.onClick.RemoveListener(OnCloseButtonPressed);
+            }
         }
 
         if (gameManager != null)
@@ -94,13 +137,46 @@ public class ShopPanelController : MonoBehaviour
         AutoAssignReferences();
     }
 
+    private void OnShopButtonPressed()
+    {
+        SoundManager.Instance?.PlayClick();
+        OpenShop();
+    }
+
+    private void OnCloseButtonPressed()
+    {
+        SoundManager.Instance?.PlayClick();
+        CloseShop();
+    }
+
     public void OpenShop()
     {
         if (shopOverlay == null) return;
 
+        if (IsOpen)
+        {
+            CloseShop();
+            return;
+        }
+
+        CanvasMejorasController mejorasController = FindMejorasController();
+        if (mejorasController != null && mejorasController.IsOpen)
+        {
+            mejorasController.ClosePanelPublic();
+        }
+
+        ApplyMejorasCloseStyle();
+        SetMejorasCanvasBelowShop();
         SetCanvasOrderForShop();
+        ApplyOverlayAlpha();
         shopOverlay.SetActive(true);
-        shopOverlay.transform.SetAsLastSibling();
+        if (shopPanel != null)
+        {
+            shopPanel.gameObject.SetActive(true);
+        }
+        EnsureIconAboveOverlay();
+        SetIconsDimmed(true, keepShopIconNormal: true, keepUpgradesIconNormal: false);
+        BringIconsToFront();
 
         EnsureScrollSetup();
         ConnectGameManager();
@@ -116,23 +192,407 @@ public class ShopPanelController : MonoBehaviour
     public void CloseShop()
     {
         if (shopOverlay == null) return;
-        shopOverlay.SetActive(false);
+        if (shopPanel != null)
+        {
+            shopPanel.gameObject.SetActive(false);
+        }
+        bool keepOverlay = false;
+        CanvasMejorasController mejorasController = FindMejorasController();
+        if (mejorasController != null && mejorasController.IsOpen)
+        {
+            keepOverlay = true;
+        }
+        shopOverlay.SetActive(keepOverlay);
         RestoreCanvasOrder();
+        RestoreMejorasCanvasOrder();
+
+        bool keepAbove = mejorasController != null && mejorasController.IsOpen;
+        if (keepAbove)
+        {
+            SetIconsDimmed(true, keepShopIconNormal: false, keepUpgradesIconNormal: true);
+            BringIconsToFront();
+        }
+        else
+        {
+            SetIconsDimmed(false, keepShopIconNormal: false, keepUpgradesIconNormal: false);
+        }
     }
 
     private void BindButtons()
     {
         if (shopButton != null)
         {
-            shopButton.onClick.RemoveListener(OpenShop);
-            shopButton.onClick.AddListener(OpenShop);
+            shopButton.onClick.RemoveListener(OnShopButtonPressed);
+            shopButton.onClick.AddListener(OnShopButtonPressed);
         }
 
         if (closeButton != null)
         {
-            closeButton.onClick.RemoveListener(CloseShop);
-            closeButton.onClick.AddListener(CloseShop);
+            closeButton.onClick.RemoveListener(OnCloseButtonPressed);
+            closeButton.onClick.AddListener(OnCloseButtonPressed);
         }
+
+        if (homeButtons.Count > 0)
+        {
+            foreach (Button button in homeButtons)
+            {
+                if (button == null) continue;
+                button.onClick.RemoveListener(OnCloseButtonPressed);
+                button.onClick.AddListener(OnCloseButtonPressed);
+            }
+        }
+    }
+
+    private void OnDisable()
+    {
+        // no-op
+    }
+
+    private void EnsureIconAboveOverlay()
+    {
+        if (shopOverlay == null)
+        {
+            return;
+        }
+
+        shopOverlay.transform.SetAsLastSibling();
+        BringIconsToFront();
+    }
+
+    private void CacheMejorasCanvas()
+    {
+        if (mejorasCanvas != null) return;
+
+        CanvasMejorasController controller = FindMejorasController();
+        if (controller == null) return;
+
+        Canvas found = controller.GetComponent<Canvas>();
+        if (found == null)
+        {
+            found = controller.GetComponentInParent<Canvas>();
+        }
+
+        if (found == null) return;
+
+        mejorasCanvas = found;
+        mejorasCanvasInitialSortingOrder = found.sortingOrder;
+    }
+
+    private void CacheMejorasOpenButton()
+    {
+        if (mejorasOpenButton != null) return;
+
+        CanvasMejorasController controller = FindMejorasController();
+        if (controller == null) return;
+
+        Button openButton = controller.GetOpenButton();
+        if (openButton == null) return;
+
+        mejorasOpenButton = openButton;
+    }
+
+    private void CacheIconTransforms()
+    {
+        if (shopButton != null)
+        {
+            shopIconTransform = shopButton.transform;
+        }
+
+        if (mejorasOpenButton != null)
+        {
+            mejorasIconTransform = mejorasOpenButton.transform;
+        }
+    }
+
+    public void BringIconsToFront()
+    {
+        CacheIconTransforms();
+
+        if (shopIconTransform != null)
+        {
+            shopIconTransform.SetAsLastSibling();
+        }
+
+        if (mejorasIconTransform != null)
+        {
+            mejorasIconTransform.SetAsLastSibling();
+        }
+
+        if (homeButtons.Count > 0)
+        {
+            foreach (Button button in homeButtons)
+            {
+                if (button == null) continue;
+                button.transform.SetAsLastSibling();
+            }
+        }
+    }
+
+    public void SetIconsDimmed(bool dim, bool keepShopIconNormal, bool keepUpgradesIconNormal)
+    {
+        CacheIconTransforms();
+        CacheHomeButtons();
+        EnsureIconCanvasOrder(shopCanvasSortingOrder + 1);
+
+        float dimFactor = 0.35f;
+        if (shopOverlay != null)
+        {
+            Image overlayImage = shopOverlay.GetComponent<Image>();
+            if (overlayImage != null)
+            {
+                dimFactor = Mathf.Clamp01(1f - overlayImage.color.a);
+            }
+        }
+
+        if (shopIconTransform != null)
+        {
+            SetImageDim(shopIconTransform.GetComponent<Image>(), dim && !keepShopIconNormal, dimFactor);
+        }
+
+        if (mejorasIconTransform != null)
+        {
+            SetImageDim(mejorasIconTransform.GetComponent<Image>(), dim && !keepUpgradesIconNormal, dimFactor);
+        }
+
+        if (homeButtons.Count > 0)
+        {
+            foreach (Button button in homeButtons)
+            {
+                if (button == null) continue;
+                SetImageDim(button.GetComponent<Image>(), dim, dimFactor);
+            }
+        }
+    }
+
+    private void EnsureIconCanvasOrder(int sortingOrder)
+    {
+        EnsureOverlayCanvas();
+
+        EnsureCanvasForTransform(shopIconTransform, sortingOrder);
+        EnsureCanvasForTransform(mejorasIconTransform, sortingOrder);
+
+        if (homeButtons.Count > 0)
+        {
+            for (int i = 0; i < homeButtons.Count; i++)
+            {
+                Button button = homeButtons[i];
+                if (button == null) continue;
+                EnsureCanvasForTransform(button.transform, sortingOrder);
+            }
+        }
+    }
+
+    private void EnsureCanvasForTransform(Transform target, int sortingOrder)
+    {
+        if (target == null) return;
+
+        Canvas canvas = target.GetComponent<Canvas>();
+        if (canvas == null)
+        {
+            canvas = target.gameObject.AddComponent<Canvas>();
+        }
+
+        canvas.overrideSorting = true;
+        canvas.sortingOrder = sortingOrder;
+        if (overlayCanvas != null)
+        {
+            canvas.sortingLayerID = overlayCanvas.sortingLayerID;
+        }
+        else if (hostCanvas != null)
+        {
+            canvas.sortingLayerID = hostCanvas.sortingLayerID;
+        }
+
+        canvas.renderMode = RenderMode.ScreenSpaceCamera;
+        canvas.worldCamera = overlayCanvas != null ? overlayCanvas.worldCamera : (hostCanvas != null ? hostCanvas.worldCamera : Camera.main);
+
+        if (target.GetComponent<GraphicRaycaster>() == null)
+        {
+            target.gameObject.AddComponent<GraphicRaycaster>();
+        }
+    }
+
+    private void ApplyOverlayAlpha()
+    {
+        if (shopOverlay == null) return;
+
+        Image overlayImage = shopOverlay.GetComponent<Image>();
+        if (overlayImage == null) return;
+
+        float targetAlpha = Mathf.Clamp01(overlayDimAlpha);
+        overlayImage.color = new Color(
+            overlayImage.color.r,
+            overlayImage.color.g,
+            overlayImage.color.b,
+            targetAlpha);
+    }
+
+    private void SetImageDim(Image image, bool dim, float dimFactor)
+    {
+        if (image == null) return;
+
+        if (!originalIconColors.TryGetValue(image, out Color original))
+        {
+            originalIconColors[image] = image.color;
+            original = image.color;
+        }
+
+        if (dim)
+        {
+            image.color = new Color(original.r * dimFactor, original.g * dimFactor, original.b * dimFactor, original.a);
+        }
+        else
+        {
+            image.color = original;
+        }
+    }
+
+    private void CacheHomeButtons()
+    {
+        homeButtons.Clear();
+
+        Transform[] allTransforms = Resources.FindObjectsOfTypeAll<Transform>();
+        for (int i = 0; i < allTransforms.Length; i++)
+        {
+            Transform current = allTransforms[i];
+            if (current == null) continue;
+
+            if (!current.name.StartsWith("Home_Icon"))
+            {
+                continue;
+            }
+
+            Button button = current.GetComponent<Button>();
+            if (button != null && !homeButtons.Contains(button))
+            {
+                homeButtons.Add(button);
+            }
+        }
+    }
+
+    private void CacheMejorasCanvasByName()
+    {
+        if (mejorasCanvas != null) return;
+
+        Transform mejorasRoot = FindTransformByName("Canvas Mejoras");
+        if (mejorasRoot == null) return;
+
+        Canvas found = mejorasRoot.GetComponent<Canvas>();
+        if (found == null)
+        {
+            found = mejorasRoot.GetComponentInParent<Canvas>();
+        }
+
+        if (found == null) return;
+
+        mejorasCanvas = found;
+        mejorasCanvasInitialSortingOrder = found.sortingOrder;
+    }
+
+    private void SetMejorasCanvasBelowShop()
+    {
+        // No-op: avoid changing the main UI canvas sorting order (keeps brainrots visible).
+    }
+
+    private void RestoreMejorasCanvasOrder()
+    {
+        // No-op: avoid changing the main UI canvas sorting order.
+    }
+
+    private void ApplyMejorasCloseStyle()
+    {
+        if (closeButton == null) return;
+
+        CanvasMejorasController mejorasController = FindMejorasController();
+        if (mejorasController == null) return;
+
+        Button sourceButton = mejorasController.GetCloseButton();
+        if (sourceButton == null) return;
+
+        ApplyCloseButtonStyle(sourceButton, closeButton);
+    }
+
+    private void ApplyCloseButtonStyle(Button sourceButton, Button targetButton)
+    {
+        if (sourceButton == null || targetButton == null) return;
+
+        RectTransform sourceRect = sourceButton.GetComponent<RectTransform>();
+        RectTransform targetRect = targetButton.GetComponent<RectTransform>();
+        if (sourceRect != null && targetRect != null)
+        {
+            targetRect.anchorMin = sourceRect.anchorMin;
+            targetRect.anchorMax = sourceRect.anchorMax;
+            targetRect.pivot = sourceRect.pivot;
+            targetRect.anchoredPosition = sourceRect.anchoredPosition;
+            targetRect.sizeDelta = sourceRect.sizeDelta;
+            targetRect.localScale = sourceRect.localScale;
+        }
+
+        Image sourceImage = sourceButton.GetComponent<Image>();
+        Image targetImage = targetButton.GetComponent<Image>();
+        if (targetImage == null)
+        {
+            targetImage = targetButton.gameObject.AddComponent<Image>();
+        }
+
+        if (sourceImage != null)
+        {
+            targetImage.sprite = sourceImage.sprite;
+            targetImage.type = sourceImage.type;
+            targetImage.color = sourceImage.color;
+            targetImage.preserveAspect = sourceImage.preserveAspect;
+        }
+
+        targetButton.transition = sourceButton.transition;
+        targetButton.colors = sourceButton.colors;
+        targetButton.spriteState = sourceButton.spriteState;
+        targetButton.animationTriggers = sourceButton.animationTriggers;
+
+        for (int i = targetButton.transform.childCount - 1; i >= 0; i--)
+        {
+            Destroy(targetButton.transform.GetChild(i).gameObject);
+        }
+
+        for (int i = 0; i < sourceButton.transform.childCount; i++)
+        {
+            Transform child = sourceButton.transform.GetChild(i);
+            GameObject clone = Instantiate(child.gameObject, targetButton.transform);
+            clone.name = child.name;
+            clone.SetActive(child.gameObject.activeSelf);
+        }
+
+        targetButton.onClick.RemoveListener(OnCloseButtonPressed);
+        targetButton.onClick.AddListener(OnCloseButtonPressed);
+    }
+
+    private static CanvasMejorasController FindMejorasController()
+    {
+        CanvasMejorasController[] allControllers = Resources.FindObjectsOfTypeAll<CanvasMejorasController>();
+        for (int i = 0; i < allControllers.Length; i++)
+        {
+            CanvasMejorasController controller = allControllers[i];
+            if (controller != null && controller.gameObject.scene.IsValid())
+            {
+                return controller;
+            }
+        }
+
+        return null;
+    }
+
+    private static Transform FindTransformByName(string name)
+    {
+        Transform[] allTransforms = Resources.FindObjectsOfTypeAll<Transform>();
+        for (int i = 0; i < allTransforms.Length; i++)
+        {
+            Transform current = allTransforms[i];
+            if (current != null && current.name == name)
+            {
+                return current;
+            }
+        }
+
+        return null;
     }
 
     private void ConnectGameManager()
@@ -194,6 +654,7 @@ public class ShopPanelController : MonoBehaviour
 
         int highestReached = gameManager != null ? gameManager.HighestStageReached : 1;
         int visibleLimit = gameManager != null ? gameManager.GetVisibleShopStageLimit() : 1;
+        int previewLimit = Mathf.Min(visibleLimit + 1, entries.Count);
 
         int visibleIndex = 0;
         for (int i = 0; i < entries.Count; i++)
@@ -202,14 +663,14 @@ public class ShopPanelController : MonoBehaviour
             if (entry == null || entry.rootObject == null) continue;
 
             int stage = entry.stage;
-            bool visible = stage <= visibleLimit;
+            bool visible = stage <= previewLimit;
             entry.rootObject.SetActive(visible);
             if (!visible) continue;
 
             entry.rectTransform.anchoredPosition = new Vector2(0f, -topPadding - visibleIndex * (itemSize.y + itemSpacing));
             visibleIndex++;
 
-            bool unlocked = stage <= highestReached;
+            bool unlocked = stage <= visibleLimit;
             entry.buyButton.interactable = unlocked;
             entry.lockOverlay.SetActive(!unlocked);
 
@@ -237,18 +698,24 @@ public class ShopPanelController : MonoBehaviour
     {
         if (gameManager == null) return;
 
+        SoundManager.Instance?.PlayClick();
         int price = GetStagePrice(stage);
         bool bought = gameManager.TryBuyBrainrotFromShop(stage, price);
 
         if (!bought)
         {
             Debug.Log($"No se pudo comprar stage {stage}. Dinero o desbloqueo insuficiente.");
+            return;
         }
+
+        SoundManager.Instance?.PlayPurchase();
     }
 
     private int GetStagePrice(int stage)
     {
-        float price = basePrice * Mathf.Pow(priceMultiplier, stage - 1);
+        int n = Mathf.Max(0, stage - 1);
+        float incremental = n * (n + 1) * 0.5f;
+        float price = basePrice + incremental * priceIncrement;
         return Mathf.RoundToInt(price);
     }
 
@@ -305,7 +772,7 @@ public class ShopPanelController : MonoBehaviour
         iconRect.anchorMin = new Vector2(0f, 0.5f);
         iconRect.anchorMax = new Vector2(0f, 0.5f);
         iconRect.pivot = new Vector2(0f, 0.5f);
-        iconRect.anchoredPosition = new Vector2(12f, -36f);
+        iconRect.anchoredPosition = new Vector2(12f, 0f);
         iconRect.sizeDelta = new Vector2(52f, 52f);
 
         Image iconImage = iconObject.GetComponent<Image>();
@@ -466,33 +933,46 @@ public class ShopPanelController : MonoBehaviour
         if (hostCanvas != null)
         {
             hostCanvasInitialSortingOrder = hostCanvas.sortingOrder;
-            hostCanvasCached = true;
         }
     }
 
     private void SetCanvasOrderForShop()
     {
-        if (hostCanvas == null)
-        {
-            CacheHostCanvas();
-        }
-
-        if (hostCanvas == null) return;
-        if (!hostCanvasCached)
-        {
-            hostCanvasInitialSortingOrder = hostCanvas.sortingOrder;
-            hostCanvasCached = true;
-        }
-
-        hostCanvas.overrideSorting = true;
-        hostCanvas.sortingOrder = shopCanvasSortingOrder;
+        EnsureOverlayCanvas();
     }
 
     private void RestoreCanvasOrder()
     {
-        if (hostCanvas == null || !hostCanvasCached) return;
-        hostCanvas.overrideSorting = true;
-        hostCanvas.sortingOrder = hostCanvasInitialSortingOrder;
+        // Keep overlay canvas settings; no main-canvas sorting changes.
+    }
+
+    private void EnsureOverlayCanvas()
+    {
+        if (shopOverlay == null) return;
+
+        if (overlayCanvas == null)
+        {
+            overlayCanvas = shopOverlay.GetComponent<Canvas>();
+        }
+        if (overlayCanvas == null)
+        {
+            overlayCanvas = shopOverlay.AddComponent<Canvas>();
+        }
+
+        overlayCanvas.overrideSorting = true;
+        overlayCanvas.sortingOrder = shopCanvasSortingOrder;
+        if (hostCanvas != null)
+        {
+            overlayCanvas.sortingLayerID = hostCanvas.sortingLayerID;
+        }
+
+        overlayCanvas.renderMode = RenderMode.ScreenSpaceCamera;
+        overlayCanvas.worldCamera = hostCanvas != null ? hostCanvas.worldCamera : Camera.main;
+
+        if (shopOverlay.GetComponent<GraphicRaycaster>() == null)
+        {
+            shopOverlay.AddComponent<GraphicRaycaster>();
+        }
     }
 
     private void AutoAssignReferences()
