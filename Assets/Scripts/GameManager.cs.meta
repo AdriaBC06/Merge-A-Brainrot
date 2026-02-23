@@ -1,2 +1,16 @@
 fileFormatVersion: 2
 guid: dad5d433b5ba0b8a4ac36febcb24fc3e
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - brainrotPrefab: {fileID: 8390704064640130717, guid: a61c2d2490bd984a993ba5c0d9a31145, type: 3}
+  - coinPrefab: {fileID: 2534229732993748294, guid: 4b3981b92815c42b6ba8d99036ca60d0, type: 3}
+  - changeWorldButton: {instanceID: 0}
+  - changeWorldScreen1Icon: {fileID: -2794702816264152368, guid: 622bea15bae640a4aa803b7304a0c50b, type: 3}
+  - changeWorldScreen2Icon: {fileID: -67770809101676607, guid: 4294fb30134bec243928bd7699231849, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

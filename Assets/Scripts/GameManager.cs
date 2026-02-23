@@ -29,10 +29,15 @@ public class GameManager : MonoBehaviour
     [SerializeField] private string runtimeScreen2Name = "__Screen2BrainrotsRuntime";
     [SerializeField] private GameObject changeWorldButton;
     [SerializeField] private int changeWorldUnlockStage = 11;
+    [Header("Change World Button Visuals")]
+    [SerializeField] private Sprite changeWorldScreen1Icon;
+    [SerializeField] private Sprite changeWorldScreen2Icon;
     private Transform screen1Container;
     private Transform screen2Container;
     private bool changeWorldUnlocked = false;
     private bool showingScreen1 = true;
+    private Button changeWorldButtonComponent;
+    private Image changeWorldButtonImage;
 
     private int highestStageReached = 1;
     private bool initialBrainrotSpawned = false;
@@ -87,6 +92,8 @@ public class GameManager : MonoBehaviour
         screen1Container = null;
         screen2Container = null;
         changeWorldButton = null;
+        changeWorldButtonComponent = null;
+        changeWorldButtonImage = null;
         initialBrainrotSpawned = false;
         spawnTimer = 0f;
 
@@ -373,25 +380,45 @@ public class GameManager : MonoBehaviour
 
         if (changeWorldButton != null)
         {
-            Button button = changeWorldButton.GetComponent<Button>();
-            if (button == null)
+            changeWorldButtonComponent = changeWorldButton.GetComponent<Button>();
+            if (changeWorldButtonComponent == null)
             {
-                button = changeWorldButton.GetComponentInChildren<Button>();
+                changeWorldButtonComponent = changeWorldButton.GetComponentInChildren<Button>();
             }
 
-            if (button != null)
+            if (changeWorldButtonComponent != null)
             {
-                button.onClick.RemoveListener(ToggleWorld);
-                button.onClick.AddListener(ToggleWorld);
+                changeWorldButtonComponent.onClick.RemoveListener(ToggleWorld);
+                changeWorldButtonComponent.onClick.AddListener(ToggleWorld);
             }
             else
             {
                 Debug.LogWarning("Change World Button is missing a Button component.");
             }
 
+            changeWorldButtonImage = null;
+            if (changeWorldButtonComponent != null)
+            {
+                changeWorldButtonImage = changeWorldButtonComponent.targetGraphic as Image;
+            }
+            if (changeWorldButtonImage == null)
+            {
+                changeWorldButtonImage = changeWorldButton.GetComponent<Image>();
+            }
+            if (changeWorldButtonImage == null)
+            {
+                changeWorldButtonImage = changeWorldButton.GetComponentInChildren<Image>();
+            }
+
+            if (changeWorldButtonImage != null && changeWorldScreen1Icon == null)
+            {
+                changeWorldScreen1Icon = changeWorldButtonImage.sprite;
+            }
+
             // Keep the button above other UI elements so it stays visible in both worlds.
             changeWorldButton.transform.SetAsLastSibling();
             changeWorldButton.SetActive(changeWorldUnlocked);
+            UpdateChangeWorldButtonVisual();
         }
     }
 
@@ -424,10 +451,25 @@ public class GameManager : MonoBehaviour
     {
         if (screen1Container != null) screen1Container.gameObject.SetActive(showingScreen1);
         if (screen2Container != null) screen2Container.gameObject.SetActive(!showingScreen1);
+        UIManager.Instance?.SetWorldBackground(showingScreen1);
+        UpdateChangeWorldButtonVisual();
         if (changeWorldButton != null)
         {
             changeWorldButton.transform.SetAsLastSibling();
             changeWorldButton.SetActive(changeWorldUnlocked);
+        }
+    }
+
+    private void UpdateChangeWorldButtonVisual()
+    {
+        if (changeWorldButtonImage == null) return;
+
+        Sprite target = showingScreen1 ? changeWorldScreen1Icon : changeWorldScreen2Icon;
+        if (target == null) return;
+
+        if (changeWorldButtonImage.sprite != target)
+        {
+            changeWorldButtonImage.sprite = target;
         }
     }
 
