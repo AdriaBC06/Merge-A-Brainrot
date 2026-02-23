@@ -1,4 +1,4 @@
-wusing TMPro;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
