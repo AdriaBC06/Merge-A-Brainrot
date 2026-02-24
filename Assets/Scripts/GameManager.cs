@@ -263,7 +263,6 @@ public class GameManager : MonoBehaviour
     public void AddMoney(float amount)
     {
         currentMoney += amount;
-        Debug.Log($"Dinero: {currentMoney}");
         UIManager.Instance?.UpdateMoney(currentMoney);
     }
 
@@ -388,7 +387,7 @@ public class GameManager : MonoBehaviour
         }
 
         int total = GetCurrentBrainrotCount();
-        Debug.Log($"Brainrot stage {stage} spawneado en {spawnPos} | Total en escena: {total}");
+        // Debug.Log($"Brainrot stage {stage} spawneado en {spawnPos} | Total en escena: {total}");
         return true;
     }
 

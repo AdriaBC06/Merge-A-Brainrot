@@ -710,7 +710,7 @@ public class ShopPanelController : MonoBehaviour
 
         if (!bought)
         {
-            Debug.Log($"No se pudo comprar stage {stage}. Dinero o desbloqueo insuficiente.");
+            // Debug.Log($"No se pudo comprar stage {stage}. Dinero o desbloqueo insuficiente.");
             return;
         }
 

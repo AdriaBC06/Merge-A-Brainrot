@@ -1,15 +1,12 @@
 using System;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Audio;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class SettingsManager : MonoBehaviour
 {
     static int index;
-
-    public AudioMixer audioMixer;
 
     private static SettingsManager instance;
 
@@ -50,7 +47,7 @@ public class SettingsManager : MonoBehaviour
 
     public void SetQuality(int qualityIndex)
     {
-        // Intentionally left blank (quality option removed from UI).
+        // No-op: kept for legacy UI bindings in the settings scene.
     }
 
     private void Awake()
