@@ -305,6 +305,7 @@ MonoBehaviour:
   shopCanvasSortingOrder: 120
   basePrice: 25
   priceIncrement: 10
+  purchasePriceGrowthFactor: 1.2
   itemSize: {x: 740, y: 72}
   topPadding: 18
   itemSpacing: 10
@@ -1308,7 +1309,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 461.74, y: 209.44}
+  m_AnchoredPosition: {x: 552.74, y: 209.44}
   m_SizeDelta: {x: 64.3605, y: 61.615}
   m_Pivot: {x: 0.5, y: 0.6298294}
 --- !u!114 &631795084
@@ -2479,7 +2480,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: -1128.7844, y: 42.802002}
+  m_AnchoredPosition: {x: -1084, y: 33}
   m_SizeDelta: {x: 59.0896, y: 53.2998}
   m_Pivot: {x: 1, y: 0}
 --- !u!114 &1850753964
@@ -2872,9 +2873,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1e875ad08cabb8dc88c5e33178d33122, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  autoClickIcon: {fileID: 0}
-  autoSpawnIcon: {fileID: 0}
-  coinMultiplierIcon: {fileID: 0}
+  autoClickIcon: {fileID: 21300000, guid: cde92da782a3fa24985de86cf32bd393, type: 3}
+  autoSpawnIcon: {fileID: 21300000, guid: 7ec10866735f0ec4f88a6b20a16ad476, type: 3}
+  coinMultiplierIcon: {fileID: 21300000, guid: 2e43f0691f0d7404eae8d01381da65a0, type: 3}
   defaultUpgradeIcon: {fileID: 0}
   panel: {fileID: 1297241860}
   botonMejorasButton: {fileID: 631795084}
@@ -2904,6 +2905,7 @@ MonoBehaviour:
   coinMultiplierInitialPrice: 100
   coinMultiplierPriceMultiplier: 2
   coinMultiplierIncreasePerPurchase: 0.5
+  coinMultiplierMaxPurchases: 25
 --- !u!114 &2133241959
 MonoBehaviour:
   m_ObjectHideFlags: 0
