@@ -84,6 +84,15 @@ public class FusionObject : MonoBehaviour
 
         if (stageSprites == null || stageSprites.Length == 0) return;
 
+        if (spriteRenderer == null)
+        {
+            spriteRenderer = GetComponent<SpriteRenderer>();
+            if (spriteRenderer == null)
+            {
+                return;
+            }
+        }
+
         if (index >= 0 && index < stageSprites.Length)
         {
             spriteRenderer.sprite = stageSprites[index];

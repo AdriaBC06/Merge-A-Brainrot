@@ -45,6 +45,7 @@ public partial class CanvasMejorasController : MonoBehaviour
     [SerializeField] private int coinMultiplierInitialPrice = 100;
     [SerializeField] private float coinMultiplierPriceMultiplier = 2f;
     [SerializeField] private float coinMultiplierIncreasePerPurchase = 0.2f;
+    [SerializeField] private int coinMultiplierMaxPurchases = 25;
 
     private int autoClickPurchases;
     private int autoClickCurrentPrice;
@@ -166,6 +167,10 @@ public partial class CanvasMejorasController : MonoBehaviour
         autoSpawnCurrentPrice = Mathf.Max(1, data.autoSpawnCurrentPrice);
         coinMultiplierCurrentPrice = Mathf.Max(1, data.coinMultiplierCurrentPrice);
         coinMultiplierPurchases = Mathf.Max(0, data.coinMultiplierPurchases);
+        if (coinMultiplierMaxPurchases > 0)
+        {
+            coinMultiplierPurchases = Mathf.Min(coinMultiplierPurchases, coinMultiplierMaxPurchases);
+        }
 
         UpdateAutoClickPriceText();
         UpdateAutoSpawnPriceText();
@@ -457,7 +462,6 @@ public partial class CanvasMejorasController : MonoBehaviour
 
     private void BuyAutoClickUpgrade()
     {
-        SoundManager.Instance?.PlayClick();
         if (autoClickPurchases >= autoClickMaxPurchases)
         {
             UpdateAutoClickPriceText();
@@ -493,7 +497,6 @@ public partial class CanvasMejorasController : MonoBehaviour
 
     private void BuyAutoSpawnUpgrade()
     {
-        SoundManager.Instance?.PlayClick();
         GameManager gameManager = GameManager.Instance ?? FindFirstObjectByType<GameManager>();
         if (gameManager == null)
         {
@@ -535,10 +538,15 @@ public partial class CanvasMejorasController : MonoBehaviour
 
     private void BuyCoinMultiplierUpgrade()
     {
-        SoundManager.Instance?.PlayClick();
         GameManager gameManager = GameManager.Instance ?? FindFirstObjectByType<GameManager>();
         if (gameManager == null)
         {
+            return;
+        }
+
+        if (coinMultiplierMaxPurchases > 0 && coinMultiplierPurchases >= coinMultiplierMaxPurchases)
+        {
+            UpdateCoinMultiplierPriceText();
             return;
         }
 
@@ -551,7 +559,10 @@ public partial class CanvasMejorasController : MonoBehaviour
         float scaledIncrease = coinMultiplierIncreasePerPurchase / (1f + coinMultiplierPurchases * 0.2f);
         ClickableObject.IncreaseGlobalMoneyMultiplier(scaledIncrease);
         coinMultiplierPurchases++;
-        coinMultiplierCurrentPrice = MultiplyPrice(coinMultiplierCurrentPrice, coinMultiplierPriceMultiplier);
+        if (coinMultiplierMaxPurchases <= 0 || coinMultiplierPurchases < coinMultiplierMaxPurchases)
+        {
+            coinMultiplierCurrentPrice = MultiplyPrice(coinMultiplierCurrentPrice, coinMultiplierPriceMultiplier);
+        }
         UpdateCoinMultiplierPriceText();
     }
 
@@ -611,6 +622,20 @@ public partial class CanvasMejorasController : MonoBehaviour
             return;
         }
 
+        if (coinMultiplierMaxPurchases > 0 && coinMultiplierPurchases >= coinMultiplierMaxPurchases)
+        {
+            coinMultiplierPriceText.text = "Precio: MAX";
+            if (coinMultiplierUpgradeButton != null)
+            {
+                coinMultiplierUpgradeButton.interactable = false;
+            }
+            return;
+        }
+
+        if (coinMultiplierUpgradeButton != null)
+        {
+            coinMultiplierUpgradeButton.interactable = true;
+        }
         coinMultiplierPriceText.text = $"Precio: {coinMultiplierCurrentPrice}$";
     }
 

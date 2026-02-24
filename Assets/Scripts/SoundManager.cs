@@ -5,13 +5,13 @@ public class SoundManager : MonoBehaviour
     public static SoundManager Instance { get; private set; }
 
     private const string PrefMusicMuted = "Settings.MusicMuted";
-    private const string PrefCoinMuted = "Settings.CoinMuted";
-    private const string PrefMasterVolume = "Settings.MasterVolume";
+    private const string PrefSfxMuted = "Settings.SfxMuted";
+    private const string PrefMusicVolumeDb = "Settings.MusicVolumeDb";
+    private const string PrefSfxVolumeDb = "Settings.SfxVolumeDb";
 
     [Header("Clips (Resources/Audio)")]
     [SerializeField] private AudioClip clickClip;
     [SerializeField] private AudioClip fusionClip;
-    [SerializeField] private AudioClip coinClip;
     [SerializeField] private AudioClip purchaseClip;
     [SerializeField] private AudioClip musicClip;
 
@@ -22,8 +22,9 @@ public class SoundManager : MonoBehaviour
     private AudioSource sfxSource;
     private AudioSource musicSource;
     private bool musicMuted;
-    private bool coinMuted;
-    private float masterVolume = 1f;
+    private bool sfxMuted;
+    private float musicVolumeDb = 0f;
+    private float sfxVolumeDb = 0f;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Bootstrap()
@@ -86,11 +87,6 @@ public class SoundManager : MonoBehaviour
             fusionClip = Resources.Load<AudioClip>("Audio/Fusion");
         }
 
-        if (coinClip == null)
-        {
-            coinClip = Resources.Load<AudioClip>("Audio/Moneda");
-        }
-
         if (purchaseClip == null)
         {
             purchaseClip = Resources.Load<AudioClip>("Audio/Mercado");
@@ -105,20 +101,27 @@ public class SoundManager : MonoBehaviour
     private void LoadPreferences()
     {
         musicMuted = PlayerPrefs.GetInt(PrefMusicMuted, 0) == 1;
-        coinMuted = PlayerPrefs.GetInt(PrefCoinMuted, 0) == 1;
-        masterVolume = Mathf.Clamp01(PlayerPrefs.GetFloat(PrefMasterVolume, 1f));
+        sfxMuted = PlayerPrefs.GetInt(PrefSfxMuted, 0) == 1;
+        musicVolumeDb = PlayerPrefs.HasKey(PrefMusicVolumeDb)
+            ? PlayerPrefs.GetFloat(PrefMusicVolumeDb, 0f)
+            : 0f;
+        sfxVolumeDb = PlayerPrefs.HasKey(PrefSfxVolumeDb)
+            ? PlayerPrefs.GetFloat(PrefSfxVolumeDb, 0f)
+            : LinearToDb(sfxVolume);
+        musicVolume = DbToLinear(musicVolumeDb);
+        sfxVolume = DbToLinear(sfxVolumeDb);
     }
 
     private void ApplyVolumes()
     {
         if (sfxSource != null)
         {
-            sfxSource.volume = masterVolume * sfxVolume;
+            sfxSource.volume = sfxVolume;
         }
 
         if (musicSource != null)
         {
-            musicSource.volume = masterVolume * musicVolume;
+            musicSource.volume = musicVolume;
         }
     }
 
@@ -128,19 +131,39 @@ public class SoundManager : MonoBehaviour
         {
             musicSource.mute = musicMuted;
         }
+
+        if (sfxSource != null)
+        {
+            sfxSource.mute = sfxMuted;
+        }
     }
 
-    public void SetMasterVolumeDb(float db)
+    public void SetMusicVolumeDb(float db)
     {
-        float linear = Mathf.Pow(10f, db / 20f);
-        SetMasterVolume(linear);
-    }
-
-    public void SetMasterVolume(float linear)
-    {
-        masterVolume = Mathf.Clamp01(linear);
-        PlayerPrefs.SetFloat(PrefMasterVolume, masterVolume);
+        musicVolumeDb = Mathf.Clamp(db, -80f, 0f);
+        PlayerPrefs.SetFloat(PrefMusicVolumeDb, musicVolumeDb);
+        PlayerPrefs.Save();
+        musicVolume = DbToLinear(musicVolumeDb);
         ApplyVolumes();
+    }
+
+    public void SetSfxVolumeDb(float db)
+    {
+        sfxVolumeDb = Mathf.Clamp(db, -80f, 0f);
+        PlayerPrefs.SetFloat(PrefSfxVolumeDb, sfxVolumeDb);
+        PlayerPrefs.Save();
+        sfxVolume = DbToLinear(sfxVolumeDb);
+        ApplyVolumes();
+    }
+
+    public float GetMusicVolumeDb()
+    {
+        return musicVolumeDb;
+    }
+
+    public float GetSfxVolumeDb()
+    {
+        return sfxVolumeDb;
     }
 
     public bool IsMusicMuted()
@@ -148,15 +171,16 @@ public class SoundManager : MonoBehaviour
         return musicMuted;
     }
 
-    public bool IsCoinMuted()
+    public bool IsSfxMuted()
     {
-        return coinMuted;
+        return sfxMuted;
     }
 
     public void SetMusicMuted(bool muted)
     {
         musicMuted = muted;
         PlayerPrefs.SetInt(PrefMusicMuted, muted ? 1 : 0);
+        PlayerPrefs.Save();
         ApplyMuteStates();
     }
 
@@ -165,35 +189,32 @@ public class SoundManager : MonoBehaviour
         SetMusicMuted(!musicMuted);
     }
 
-    public void SetCoinMuted(bool muted)
+    public void SetSfxMuted(bool muted)
     {
-        coinMuted = muted;
-        PlayerPrefs.SetInt(PrefCoinMuted, muted ? 1 : 0);
+        sfxMuted = muted;
+        PlayerPrefs.SetInt(PrefSfxMuted, muted ? 1 : 0);
+        PlayerPrefs.Save();
+        ApplyMuteStates();
     }
 
-    public void ToggleCoinMuted()
+    public void ToggleSfxMuted()
     {
-        SetCoinMuted(!coinMuted);
+        SetSfxMuted(!sfxMuted);
     }
 
     public void PlayClick()
     {
+        if (sfxMuted)
+        {
+            return;
+        }
+
         PlayOneShot(clickClip);
     }
 
     public void PlayFusion()
     {
         PlayOneShot(fusionClip);
-    }
-
-    public void PlayCoin()
-    {
-        if (coinMuted)
-        {
-            return;
-        }
-
-        PlayOneShot(coinClip);
     }
 
     public void PlayPurchase()
@@ -227,5 +248,16 @@ public class SoundManager : MonoBehaviour
         }
 
         sfxSource.PlayOneShot(clip);
+    }
+
+    private float DbToLinear(float db)
+    {
+        return Mathf.Clamp01(Mathf.Pow(10f, db / 20f));
+    }
+
+    private float LinearToDb(float linear)
+    {
+        float clamped = Mathf.Clamp(linear, 0.0001f, 1f);
+        return Mathf.Clamp(20f * Mathf.Log10(clamped), -80f, 0f);
     }
 }

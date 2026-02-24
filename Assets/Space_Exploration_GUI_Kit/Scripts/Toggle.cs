@@ -7,11 +7,18 @@ namespace SpaceGUI
 {
     public class Toggle : MonoBehaviour
     {
+        public enum ToggleTarget
+        {
+            Music,
+            Pop
+        }
+
         public Image first;
         public Image second;
         public Image third;
         public Image fourth;
         public Image background;
+        public ToggleTarget toggleTarget = ToggleTarget.Music;
         int index;
 
         void Update()
@@ -41,7 +48,14 @@ namespace SpaceGUI
             first.gameObject.SetActive(!enabled);
             third.gameObject.SetActive(enabled);
             fourth.gameObject.SetActive(!enabled);
-            SettingsManager.SetMusicMuted(!enabled);
+            if (toggleTarget == ToggleTarget.Music)
+            {
+                SettingsManager.SetMusicMuted(!enabled);
+            }
+            else
+            {
+                SettingsManager.SetPopMuted(!enabled);
+            }
 
             if (playSound)
             {

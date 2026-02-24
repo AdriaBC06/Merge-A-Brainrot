@@ -18,10 +18,13 @@ public class UIManager : MonoBehaviour
 
     [Header("Navigation")]
     [SerializeField] private string mainMenuSceneName = "MainMenu";
+    [SerializeField] private string startButtonObjectName = "Start_Button";
 
     private Image worldBackgroundImage;
     private Button homeButton;
     private GameObject homeNotificationDot;
+    private TextMeshProUGUI startButtonText;
+    private Button quitButton;
 
     private void Awake()
     {
@@ -29,7 +32,9 @@ public class UIManager : MonoBehaviour
         EnsureCanvasRendersBehindSprites();
         EnsureBackgroundDefaults();
         EnsureHomeButtonBinding();
+        EnsureQuitButtonBinding();
         HideHomeNotificationDot();
+        UpdateStartButtonLabel();
         if (GameManager.Instance != null)
         {
             UpdateMoney(GameManager.Instance.currentMoney);
@@ -94,6 +99,26 @@ public class UIManager : MonoBehaviour
         homeButton.onClick.AddListener(OnHomePress);
     }
 
+    private void EnsureQuitButtonBinding()
+    {
+        if (quitButton == null)
+        {
+            GameObject quitObject = GameObject.Find("Quit_Button");
+            if (quitObject != null)
+            {
+                quitButton = quitObject.GetComponent<Button>();
+                if (quitButton == null)
+                {
+                    quitButton = quitObject.GetComponentInChildren<Button>(true);
+                }
+            }
+        }
+
+        if (quitButton == null) return;
+        quitButton.onClick.RemoveListener(OnQuitPress);
+        quitButton.onClick.AddListener(OnQuitPress);
+    }
+
     private void HideHomeNotificationDot()
     {
         if (homeNotificationDot == null)
@@ -113,6 +138,10 @@ public class UIManager : MonoBehaviour
 
     public void UpdateMoney(float money)
     {
+        if (moneyText == null)
+        {
+            return;
+        }
         moneyText.text = $"${money:F0}";
     }
 
@@ -139,6 +168,7 @@ public class UIManager : MonoBehaviour
     public void OnSettingsPress()
     {
         SoundManager.Instance?.PlayClick();
+        GameManager.Instance?.RequestSave();
         SettingsManager.SettingsOpen();
     }
 
@@ -159,5 +189,38 @@ public class UIManager : MonoBehaviour
         }
 
         Debug.LogWarning($"Main menu scene '{mainMenuSceneName}' is not in Build Settings.");
+    }
+
+    public void OnQuitPress()
+    {
+        SoundManager.Instance?.PlayClick();
+        GameManager.Instance?.RequestSave();
+        PlayerPrefs.Save();
+
+        Application.Quit();
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#endif
+    }
+
+    private void UpdateStartButtonLabel()
+    {
+        if (startButtonText == null)
+        {
+            GameObject startButton = GameObject.Find(startButtonObjectName);
+            if (startButton != null)
+            {
+                startButtonText = startButton.GetComponentInChildren<TextMeshProUGUI>(true);
+            }
+        }
+
+        if (startButtonText == null)
+        {
+            return;
+        }
+
+        bool hasSave = PlayerPrefs.HasKey(GameManager.SaveKey) &&
+            !string.IsNullOrEmpty(PlayerPrefs.GetString(GameManager.SaveKey));
+        startButtonText.text = hasSave ? "CONTINUE" : "START";
     }
 }

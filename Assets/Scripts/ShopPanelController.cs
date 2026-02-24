@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -20,6 +21,7 @@ public class ShopPanelController : MonoBehaviour
     [Header("Pricing")]
     [SerializeField] private int basePrice = 25;
     [SerializeField] private int priceIncrement = 10;
+    [SerializeField] private float purchasePriceGrowthFactor = 1.2f;
 
     [Header("Layout")]
     [SerializeField] private Vector2 itemSize = new Vector2(740f, 72f);
@@ -72,6 +74,7 @@ public class ShopPanelController : MonoBehaviour
         public Image iconImage;
         public TextMeshProUGUI titleText;
         public TextMeshProUGUI priceText;
+        public TextMeshProUGUI countText;
         public GameObject lockOverlay;
     }
 
@@ -674,10 +677,14 @@ public class ShopPanelController : MonoBehaviour
             entry.buyButton.interactable = unlocked;
             entry.lockOverlay.SetActive(!unlocked);
 
-            entry.titleText.text = $"Brainrot Stage {stage}";
-
             Sprite stageSprite = gameManager != null ? gameManager.GetBrainrotSpriteForStage(stage) : null;
             entry.iconImage.sprite = stageSprite;
+            entry.titleText.text = GetBrainrotDisplayName(stage, stageSprite);
+            if (entry.countText != null)
+            {
+                int count = gameManager != null ? gameManager.GetShopPurchaseCount(stage) : 0;
+                entry.countText.text = count > 0 ? $"x{count}" : string.Empty;
+            }
 
             if (unlocked)
             {
@@ -698,7 +705,6 @@ public class ShopPanelController : MonoBehaviour
     {
         if (gameManager == null) return;
 
-        SoundManager.Instance?.PlayClick();
         int price = GetStagePrice(stage);
         bool bought = gameManager.TryBuyBrainrotFromShop(stage, price);
 
@@ -709,14 +715,79 @@ public class ShopPanelController : MonoBehaviour
         }
 
         SoundManager.Instance?.PlayPurchase();
+        RefreshEntries();
     }
 
     private int GetStagePrice(int stage)
     {
         int n = Mathf.Max(0, stage - 1);
-        float incremental = n * (n + 1) * 0.5f;
-        float price = basePrice + incremental * priceIncrement;
-        return Mathf.RoundToInt(price);
+        double incremental = n * (n + 1) * 0.5;
+        double price = basePrice + incremental * priceIncrement;
+
+        int purchaseCount = gameManager != null ? gameManager.GetShopPurchaseCount(stage) : 0;
+        float growth = Mathf.Max(1.01f, purchasePriceGrowthFactor);
+        double scaled = price * Math.Pow(growth, purchaseCount);
+        if (scaled > int.MaxValue)
+        {
+            return int.MaxValue;
+        }
+
+        return Mathf.RoundToInt((float)scaled);
+    }
+
+    private string GetBrainrotDisplayName(int stage, Sprite stageSprite)
+    {
+        if (stageSprite == null)
+        {
+            return $"Brainrot Stage {stage}";
+        }
+
+        string raw = stageSprite.name ?? string.Empty;
+        raw = raw.Replace('_', ' ').Replace('-', ' ').Trim();
+        raw = TrimTrailingDigits(raw);
+        if (string.IsNullOrEmpty(raw))
+        {
+            return $"Brainrot Stage {stage}";
+        }
+
+        return CapitalizeFirst(raw);
+    }
+
+    private string TrimTrailingDigits(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return value;
+        }
+
+        int end = value.Length;
+        while (end > 0 && char.IsDigit(value[end - 1]))
+        {
+            end--;
+        }
+
+        if (end == value.Length)
+        {
+            return value;
+        }
+
+        return value.Substring(0, end).TrimEnd();
+    }
+
+    private string CapitalizeFirst(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return value;
+        }
+
+        char first = char.ToUpperInvariant(value[0]);
+        if (value.Length == 1)
+        {
+            return first.ToString();
+        }
+
+        return first + value.Substring(1);
     }
 
     private ShopEntry CreateEntry(int stage)
@@ -752,10 +823,40 @@ public class ShopPanelController : MonoBehaviour
         entry.iconImage = CreateIcon(entry.rectTransform, stage);
         entry.titleText = CreateLabel(entry.rectTransform, "Title", new Vector2(130f, -16f), new Vector2(300f, 26f), 24f, FontStyles.Bold);
         entry.priceText = CreateLabel(entry.rectTransform, "Price", new Vector2(130f, -44f), new Vector2(320f, 22f), 20f, FontStyles.Normal);
+        entry.countText = CreateCountLabel(entry.rectTransform);
 
         entry.lockOverlay = CreateLockOverlay(entry.rectTransform);
 
         return entry;
+    }
+
+    private TextMeshProUGUI CreateCountLabel(RectTransform parent)
+    {
+        GameObject textObject = new GameObject(
+            "Count",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(TextMeshProUGUI)
+        );
+
+        RectTransform textRect = textObject.GetComponent<RectTransform>();
+        textRect.SetParent(parent, false);
+        textRect.anchorMin = new Vector2(1f, 1f);
+        textRect.anchorMax = new Vector2(1f, 1f);
+        textRect.pivot = new Vector2(1f, 1f);
+        textRect.anchoredPosition = new Vector2(-16f, -16f);
+        textRect.sizeDelta = new Vector2(100f, 26f);
+
+        TextMeshProUGUI text = textObject.GetComponent<TextMeshProUGUI>();
+        text.font = GetFontAsset();
+        text.fontSize = 22f;
+        text.fontStyle = FontStyles.Bold;
+        text.color = Color.white;
+        text.alignment = TextAlignmentOptions.Right;
+        text.raycastTarget = false;
+        text.text = "x0";
+
+        return text;
     }
 
     private Image CreateIcon(RectTransform parent, int stage)

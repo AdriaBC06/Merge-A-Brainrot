@@ -363,9 +363,9 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -95.00009, y: 50.000042}
+  m_AnchoredPosition: {x: -95.000046, y: 50}
   m_SizeDelta: {x: 142, y: 92}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_Pivot: {x: 0.50000006, y: 0.5}
 --- !u!1 &129040870
 GameObject:
   m_ObjectHideFlags: 0
@@ -990,6 +990,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   audioMixer: {fileID: 24100000, guid: 13ff83f4408418440a1aea74ba0657d7, type: 2}
+  muteMusicToggleOffset: {x: -400, y: 21}
+  mutePopToggleOffset: {x: 300, y: 21}
+  muteMusicLabelOffset: {x: -400, y: 0}
+  mutePopLabelOffset: {x: 300, y: 0}
 --- !u!1 &290093164
 GameObject:
   m_ObjectHideFlags: 0
@@ -2641,9 +2645,9 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -375, y: 0}
+  m_AnchoredPosition: {x: -187, y: 47}
   m_SizeDelta: {x: 306, y: 94}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_Pivot: {x: 0.50000006, y: 0.4999991}
 --- !u!114 &1026216691
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3608,9 +3612,9 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 54.99991, y: 50.000042}
+  m_AnchoredPosition: {x: 55.000145, y: 50}
   m_SizeDelta: {x: 142, y: 92}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_Pivot: {x: 0.5000001, y: 0.5}
 --- !u!1 &1322371265
 GameObject:
   m_ObjectHideFlags: 0
@@ -3991,7 +3995,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: -91, y: 0.233}
+  m_AnchoredPosition: {x: -91, y: 0.23300171}
   m_SizeDelta: {x: 6, y: 64}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1434709834
@@ -4949,7 +4953,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -370, y: 0}
+  m_AnchoredPosition: {x: -342, y: 0}
   m_SizeDelta: {x: 240, y: 60}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1864372558
@@ -5247,6 +5251,7 @@ MonoBehaviour:
   third: {fileID: 759202289}
   fourth: {fileID: 1309999721}
   background: {fileID: 291879552}
+  toggleTarget: 0
 --- !u!1 &2071476257
 GameObject:
   m_ObjectHideFlags: 0
@@ -5277,6 +5282,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   audioMixer: {fileID: 24100000, guid: 13ff83f4408418440a1aea74ba0657d7, type: 2}
+  muteMusicToggleOffset: {x: 0, y: 0}
+  mutePopToggleOffset: {x: 260, y: 0}
+  muteMusicLabelOffset: {x: 0, y: 0}
+  mutePopLabelOffset: {x: 260, y: 0}
 --- !u!4 &2071476259
 Transform:
   m_ObjectHideFlags: 0

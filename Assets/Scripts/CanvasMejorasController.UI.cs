@@ -5,6 +5,12 @@ using UnityEngine.UI;
 
 public partial class CanvasMejorasController
 {
+    [Header("Upgrade Icons")]
+    [SerializeField] private Sprite autoClickIcon;
+    [SerializeField] private Sprite autoSpawnIcon;
+    [SerializeField] private Sprite coinMultiplierIcon;
+    [SerializeField] private Sprite defaultUpgradeIcon;
+
     private void EnsurePanelLayout()
     {
         if (panel == null)
@@ -315,8 +321,85 @@ public partial class CanvasMejorasController
         Image iconImage = iconObject.GetComponent<Image>();
         iconImage.preserveAspect = true;
         iconImage.raycastTarget = false;
+        Sprite iconSprite = GetUpgradeIcon(id);
+        if (iconSprite != null)
+        {
+            iconImage.sprite = iconSprite;
+            iconImage.color = Color.white;
+        }
+        else
+        {
+            Color clear = Color.white;
+            clear.a = 0f;
+            iconImage.color = clear;
+        }
 
         return iconImage;
+    }
+
+    private Sprite GetUpgradeIcon(UpgradeId id)
+    {
+        Sprite assigned = null;
+
+        switch (id)
+        {
+            case UpgradeId.AutoClick:
+                assigned = autoClickIcon;
+                break;
+            case UpgradeId.AutoSpawn:
+                assigned = autoSpawnIcon;
+                break;
+            case UpgradeId.CoinMultiplier:
+                assigned = coinMultiplierIcon;
+                break;
+        }
+
+        if (assigned != null)
+        {
+            return assigned;
+        }
+
+        Sprite legacy = FindLegacyIcon(id);
+        if (legacy != null)
+        {
+            return legacy;
+        }
+
+        return defaultUpgradeIcon;
+    }
+
+    private Sprite FindLegacyIcon(UpgradeId id)
+    {
+        Button sourceButton = null;
+        switch (id)
+        {
+            case UpgradeId.AutoClick:
+                sourceButton = autoClickUpgradeButton;
+                break;
+            case UpgradeId.AutoSpawn:
+                sourceButton = autoSpawnUpgradeButton;
+                break;
+            case UpgradeId.CoinMultiplier:
+                sourceButton = coinMultiplierUpgradeButton;
+                break;
+        }
+
+        if (sourceButton == null)
+        {
+            return null;
+        }
+
+        Image target = sourceButton.targetGraphic as Image;
+        Image[] images = sourceButton.GetComponentsInChildren<Image>(true);
+        for (int i = 0; i < images.Length; i++)
+        {
+            Image img = images[i];
+            if (img == null || img.sprite == null) continue;
+            if (target != null && img == target) continue;
+            return img.sprite;
+        }
+
+        return target != null ? target.sprite : null;
     }
 
     private TextMeshProUGUI CreateLabel(

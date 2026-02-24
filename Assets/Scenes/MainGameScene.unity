@@ -164,9 +164,9 @@ RectTransform:
   m_Father: {fileID: 205529900}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
-  m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 81.4151, y: 87.3362}
+  m_AnchorMax: {x: 0.09, y: 0.5}
+  m_AnchoredPosition: {x: -97.7, y: 6.8}
+  m_SizeDelta: {x: 149.655, y: 189.498}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &66424429
 MonoBehaviour:
@@ -188,7 +188,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: -193848521785882218, guid: e3fc955e340678541a7f69a39fc5aec0, type: 3}
+  m_Sprite: {fileID: -3338749442709606003, guid: 3cb502710f449c85ab38be552c6a51a2, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -242,8 +242,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -0.000015258789}
-  m_SizeDelta: {x: 300, y: 72}
+  m_AnchoredPosition: {x: 62.5, y: 3.2}
+  m_SizeDelta: {x: 373.499, y: 72}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &205529901
 MonoBehaviour:
@@ -301,9 +301,10 @@ MonoBehaviour:
   shopPanel: {fileID: 210000211}
   itemsRoot: {fileID: 210000241}
   hideOverlayOnAwake: 1
+  overlayDimAlpha: 0.55
   shopCanvasSortingOrder: 120
   basePrice: 25
-  priceMultiplier: 2
+  priceIncrement: 10
   itemSize: {x: 740, y: 72}
   topPadding: 18
   itemSpacing: 10
@@ -343,8 +344,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -15, y: -89.78601}
-  m_SizeDelta: {x: 205.75, y: 169.214}
+  m_AnchoredPosition: {x: -22.578, y: -156}
+  m_SizeDelta: {x: 202.04, y: 166.1675}
   m_Pivot: {x: 1, y: 1}
 --- !u!222 &210000102
 CanvasRenderer:
@@ -418,7 +419,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 2080985482723382556, guid: 18b6c9889d997f54dba5891f09ecfe04, type: 3}
+  m_Sprite: {fileID: 6840857970483876212, guid: f35d6948fa73b7e69be448db4646ab95, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -536,7 +537,7 @@ RectTransform:
   m_Children:
   - {fileID: 210000241}
   - {fileID: 210000221}
-  m_Father: {fileID: 2133241957}
+  m_Father: {fileID: 210000201}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -649,8 +650,8 @@ MonoBehaviour:
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
   m_Colors:
-    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
-    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_NormalColor: {r: 1, g: 1, b: 1, a: 0}
+    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 0}
     m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
     m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
     m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
@@ -692,7 +693,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 0f9aff9d1d5411d419a50a1f33efcf25, type: 3}
+  m_Sprite: {fileID: 0}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1307,9 +1308,9 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 583.43005, y: 125.03824}
-  m_SizeDelta: {x: 62.922, y: 60.2383}
-  m_Pivot: {x: 0.5, y: 0.5836384}
+  m_AnchoredPosition: {x: 461.74, y: 209.44}
+  m_SizeDelta: {x: 64.3605, y: 61.615}
+  m_Pivot: {x: 0.5, y: 0.6298294}
 --- !u!114 &631795084
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1374,7 +1375,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 5116118439385362618, guid: f38240d45d27e4646a94188b4876e6a0, type: 3}
+  m_Sprite: {fileID: 4771789244991086169, guid: 244ebc05933849f0a9615dabc81271a8, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1522,8 +1523,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -15, y: -12}
-  m_SizeDelta: {x: 203.9131, y: 193.5129}
+  m_AnchoredPosition: {x: -15, y: -16}
+  m_SizeDelta: {x: 217.1956, y: 206.11}
   m_Pivot: {x: 1, y: 1}
 --- !u!114 &893865915
 MonoBehaviour:
@@ -1545,7 +1546,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 2095938114413194687, guid: 0196cf78e3672c7438d794edb92f33f1, type: 3}
+  m_Sprite: {fileID: -1923994175756728024, guid: fc47c13034527829ea5a4fcb1477433e, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1786,7 +1787,7 @@ RectTransform:
   - {fileID: 1075109501}
   - {fileID: 628281809}
   - {fileID: 1618364503}
-  m_Father: {fileID: 210000201}
+  m_Father: {fileID: 66424428}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
@@ -2033,8 +2034,8 @@ MonoBehaviour:
   runtimeScreen2Name: __Screen2BrainrotsRuntime
   changeWorldButton: {fileID: 1850753962}
   changeWorldUnlockStage: 10
-  changeWorldScreen1Icon: {fileID: -2794702816264152368, guid: 622bea15bae640a4aa803b7304a0c50b, type: 3}
-  changeWorldScreen2Icon: {fileID: -67770809101676607, guid: 4294fb30134bec243928bd7699231849, type: 3}
+  changeWorldScreen1Icon: {fileID: 4799661656225657275, guid: 4edde6307fd4868a1805ca1ba07b261f, type: 3}
+  changeWorldScreen2Icon: {fileID: 5757750083339748195, guid: 87d21f584bbf7de22bf52ac3ba20a8f0, type: 3}
 --- !u!4 &1534483517
 Transform:
   m_ObjectHideFlags: 0
@@ -2406,6 +2407,7 @@ MonoBehaviour:
   mainCanvas: {fileID: 0}
   canvasSortingOrder: -10
   mainMenuSceneName: MainMenu
+  startButtonObjectName: Start_Button
 --- !u!1 &1772845038
 GameObject:
   m_ObjectHideFlags: 0
@@ -2439,7 +2441,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 20, y: -70}
+  m_AnchoredPosition: {x: 23.400024, y: -68.100006}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0, y: 0}
 --- !u!1 &1850753962
@@ -2477,8 +2479,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: -1116, y: 24}
-  m_SizeDelta: {x: 79.7027, y: 71.893}
+  m_AnchoredPosition: {x: -1128.7844, y: 42.802002}
+  m_SizeDelta: {x: 59.0896, y: 53.2998}
   m_Pivot: {x: 1, y: 0}
 --- !u!114 &1850753964
 MonoBehaviour:
@@ -2544,7 +2546,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: -2794702816264152368, guid: 622bea15bae640a4aa803b7304a0c50b, type: 3}
+  m_Sprite: {fileID: 4799661656225657275, guid: 4edde6307fd4868a1805ca1ba07b261f, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -2870,11 +2872,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1e875ad08cabb8dc88c5e33178d33122, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  autoClickIcon: {fileID: 0}
+  autoSpawnIcon: {fileID: 0}
+  coinMultiplierIcon: {fileID: 0}
+  defaultUpgradeIcon: {fileID: 0}
   panel: {fileID: 1297241860}
   botonMejorasButton: {fileID: 631795084}
   cerrarButton: {fileID: 1618364504}
   overlay: {fileID: 0}
   mejorasCanvasSortingOrder: 120
+  overlayDimAlpha: 0.55
   panelRect: {fileID: 0}
   itemsRoot: {fileID: 0}
   itemSize: {x: 740, y: 72}

@@ -130,7 +130,6 @@ public class ClickableObject : MonoBehaviour
             );
 
             Debug.Log("Moneda creada en posición: " + coin.transform.position);
-            SoundManager.Instance?.PlayCoin();
 
             Coin coinScript = coin.GetComponent<Coin>();
             if (coinScript != null)

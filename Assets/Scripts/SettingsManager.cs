@@ -1,3 +1,4 @@
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Audio;
@@ -13,17 +14,27 @@ public class SettingsManager : MonoBehaviour
     private static SettingsManager instance;
 
     private Image musicIcon;
-    private Image coinIcon;
+    private Image popIcon;
     private SpaceGUI.Toggle musicToggle;
+    private SpaceGUI.Toggle popToggle;
+    private Slider musicSlider;
+    private Slider sfxSlider;
+
+    [Header("Mute Buttons Layout")]
+    [SerializeField] private bool overrideMuteLayout = true;
+    [SerializeField] private float muteMusicToggleX = -220f;
+    [SerializeField] private float mutePopToggleX = 220f;
+    [SerializeField] private float muteMusicLabelX = -220f;
+    [SerializeField] private float mutePopLabelX = 220f;
 
     public void SetVolume(float volume)
     {
-        if (audioMixer != null)
-        {
-            audioMixer.SetFloat("volume", volume);
-        }
+        SoundManager.EnsureExists().SetSfxVolumeDb(volume);
+    }
 
-        SoundManager.EnsureExists().SetMasterVolumeDb(volume);
+    public void SetMusicVolume(float volume)
+    {
+        SoundManager.EnsureExists().SetMusicVolumeDb(volume);
     }
 
     public static void SettingsOpen()
@@ -52,7 +63,9 @@ public class SettingsManager : MonoBehaviour
         SoundManager.EnsureExists();
         HideLegacyOptions();
         ConfigureMusicSection();
-        ConfigureCoinSection();
+        ConfigureSoundSection();
+        ConfigureMuteLabels();
+        ConfigureSliders();
         SyncToggleStates();
     }
 
@@ -62,11 +75,10 @@ public class SettingsManager : MonoBehaviour
         instance?.UpdateIconStates();
     }
 
-    public void ToggleCoinSound()
+    public static void SetPopMuted(bool muted)
     {
-        SoundManager.EnsureExists().ToggleCoinMuted();
-        SoundManager.Instance?.PlayClick();
-        UpdateIconStates();
+        SoundManager.EnsureExists().SetSfxMuted(muted);
+        instance?.UpdateIconStates();
     }
 
     private void HideLegacyOptions()
@@ -92,10 +104,16 @@ public class SettingsManager : MonoBehaviour
             TMP_Text label = musicSection.GetComponentInChildren<TMP_Text>(true);
             if (label != null)
             {
-                label.text = "Musica";
+                label.text = "Mute Music";
+                label.alignment = TextAlignmentOptions.Center;
             }
 
             musicToggle = musicSection.GetComponentInChildren<SpaceGUI.Toggle>(true);
+            RectTransform musicRect = musicSection.GetComponent<RectTransform>();
+            if (musicRect != null && overrideMuteLayout)
+            {
+                musicRect.anchoredPosition = new Vector2(muteMusicToggleX, musicRect.anchoredPosition.y);
+            }
         }
 
         GameObject musicIconObject = GameObject.Find("Music_Icon");
@@ -115,24 +133,12 @@ public class SettingsManager : MonoBehaviour
         }
     }
 
-    private void ConfigureCoinSection()
+    private void ConfigureSoundSection()
     {
-        GameObject coinIconObject = GameObject.Find("Sound_Icon");
-        if (coinIconObject != null)
+        GameObject popIconObject = GameObject.Find("Sound_Icon");
+        if (popIconObject != null)
         {
-            coinIcon = coinIconObject.GetComponent<Image>();
-            if (coinIcon != null)
-            {
-                Button button = coinIcon.GetComponent<Button>();
-                if (button == null)
-                {
-                    button = coinIcon.gameObject.AddComponent<Button>();
-                }
-                button.transition = Selectable.Transition.ColorTint;
-                button.targetGraphic = coinIcon;
-                button.onClick.RemoveListener(ToggleCoinSound);
-                button.onClick.AddListener(ToggleCoinSound);
-            }
+            popIcon = popIconObject.GetComponent<Image>();
         }
 
         GameObject soundTextObject = GameObject.Find("Sound_TXT");
@@ -141,8 +147,123 @@ public class SettingsManager : MonoBehaviour
             TMP_Text soundText = soundTextObject.GetComponent<TMP_Text>();
             if (soundText != null)
             {
-                soundText.text = "Moneda";
+                soundText.text = "Pop";
             }
+        }
+
+        ConfigurePopToggle();
+    }
+
+    private void ConfigureMuteLabels()
+    {
+        TMP_Text[] texts = FindObjectsByType<TMP_Text>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        TMP_Text musicLabel = null;
+
+        foreach (TMP_Text text in texts)
+        {
+            if (text == null) continue;
+            if (string.Equals(text.text?.Trim(), "Fullscreen", StringComparison.OrdinalIgnoreCase))
+            {
+                musicLabel = text;
+                break;
+            }
+        }
+
+        if (musicLabel != null)
+        {
+            musicLabel.text = "Mute Music";
+            musicLabel.alignment = TextAlignmentOptions.Center;
+            if (overrideMuteLayout)
+            {
+                musicLabel.rectTransform.anchoredPosition = new Vector2(
+                    muteMusicLabelX,
+                    musicLabel.rectTransform.anchoredPosition.y
+                );
+            }
+        }
+
+        if (musicLabel == null)
+        {
+            return;
+        }
+
+        Transform parent = musicLabel.transform.parent;
+        if (parent == null)
+        {
+            return;
+        }
+
+        TMP_Text popLabel = null;
+        Transform existing = parent.Find("Mute_Pop_Label");
+        if (existing != null)
+        {
+            popLabel = existing.GetComponent<TMP_Text>();
+        }
+        else
+        {
+            GameObject clone = Instantiate(musicLabel.gameObject, parent);
+            clone.name = "Mute_Pop_Label";
+            popLabel = clone.GetComponent<TMP_Text>();
+        }
+
+        if (popLabel == null)
+        {
+            return;
+        }
+
+        popLabel.text = "Mute Pop";
+        popLabel.alignment = TextAlignmentOptions.Center;
+
+        RectTransform musicRect = musicLabel.rectTransform;
+        RectTransform popRect = popLabel.rectTransform;
+        if (musicRect != null && popRect != null)
+        {
+            if (overrideMuteLayout || existing == null)
+            {
+                popRect.anchoredPosition = new Vector2(mutePopLabelX, popRect.anchoredPosition.y);
+            }
+        }
+    }
+
+    private void ConfigurePopToggle()
+    {
+        GameObject musicSection = GameObject.Find("Fullscreen");
+        if (musicSection == null)
+        {
+            return;
+        }
+
+        Transform parent = musicSection.transform.parent;
+        if (parent == null)
+        {
+            return;
+        }
+
+        Transform existing = parent.Find("Mute_Pop");
+        GameObject popObject = existing != null ? existing.gameObject : Instantiate(musicSection, parent);
+        popObject.name = "Mute_Pop";
+
+        RectTransform popRect = popObject.GetComponent<RectTransform>();
+        RectTransform musicRect = musicSection.GetComponent<RectTransform>();
+        if (popRect != null && musicRect != null)
+        {
+            if (overrideMuteLayout || existing == null)
+            {
+                popRect.anchoredPosition = new Vector2(mutePopToggleX, popRect.anchoredPosition.y);
+            }
+        }
+
+        TMP_Text label = popObject.GetComponentInChildren<TMP_Text>(true);
+        if (label != null)
+        {
+            label.text = "Mute Pop";
+            label.alignment = TextAlignmentOptions.Center;
+        }
+
+        popToggle = popObject.GetComponentInChildren<SpaceGUI.Toggle>(true);
+        if (popToggle != null)
+        {
+            popToggle.toggleTarget = SpaceGUI.Toggle.ToggleTarget.Pop;
         }
     }
 
@@ -152,6 +273,12 @@ public class SettingsManager : MonoBehaviour
         {
             bool muted = SoundManager.Instance != null && SoundManager.Instance.IsMusicMuted();
             musicToggle.SetState(!muted, false);
+        }
+
+        if (popToggle != null)
+        {
+            bool muted = SoundManager.Instance != null && SoundManager.Instance.IsSfxMuted();
+            popToggle.SetState(!muted, false);
         }
 
         UpdateIconStates();
@@ -165,16 +292,63 @@ public class SettingsManager : MonoBehaviour
             musicIcon.color = SetMutedAlpha(musicIcon.color, muted);
         }
 
-        if (coinIcon != null)
+        if (popIcon != null)
         {
-            bool muted = SoundManager.Instance != null && SoundManager.Instance.IsCoinMuted();
-            coinIcon.color = SetMutedAlpha(coinIcon.color, muted);
+            bool muted = SoundManager.Instance != null && SoundManager.Instance.IsSfxMuted();
+            popIcon.color = SetMutedAlpha(popIcon.color, muted);
         }
+
     }
 
     private Color SetMutedAlpha(Color color, bool muted)
     {
         color.a = muted ? 0.35f : 1f;
         return color;
+    }
+
+    private void ConfigureSliders()
+    {
+        GameObject musicRoot = GameObject.Find("Music_Slider");
+        if (musicRoot != null)
+        {
+            musicSlider = musicRoot.GetComponentInChildren<Slider>(true);
+        }
+
+        GameObject soundRoot = GameObject.Find("Sound_Slider");
+        if (soundRoot != null)
+        {
+            sfxSlider = soundRoot.GetComponentInChildren<Slider>(true);
+        }
+
+        if (musicSlider != null)
+        {
+            musicSlider.onValueChanged.RemoveAllListeners();
+            musicSlider.minValue = -80f;
+            musicSlider.maxValue = 0f;
+            musicSlider.wholeNumbers = true;
+            musicSlider.onValueChanged.AddListener(SetMusicVolume);
+        }
+
+        if (sfxSlider != null)
+        {
+            sfxSlider.onValueChanged.RemoveAllListeners();
+            sfxSlider.minValue = -80f;
+            sfxSlider.maxValue = 0f;
+            sfxSlider.wholeNumbers = true;
+            sfxSlider.onValueChanged.AddListener(SetVolume);
+        }
+
+        if (SoundManager.Instance != null)
+        {
+            if (musicSlider != null)
+            {
+                musicSlider.SetValueWithoutNotify(SoundManager.Instance.GetMusicVolumeDb());
+            }
+
+            if (sfxSlider != null)
+            {
+                sfxSlider.SetValueWithoutNotify(SoundManager.Instance.GetSfxVolumeDb());
+            }
+        }
     }
 }

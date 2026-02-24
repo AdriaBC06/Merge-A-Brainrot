@@ -41,8 +41,9 @@ public class GameManager : MonoBehaviour
     private Image changeWorldButtonImage;
 
     private int highestStageReached = 1;
+    private readonly Dictionary<int, int> shopPurchaseCounts = new Dictionary<int, int>();
     private bool initialBrainrotSpawned = false;
-    private const string SaveKey = "MergeBrainrotSave";
+    public const string SaveKey = "MergeBrainrotSave";
     private SaveData pendingSave;
 
     [Serializable]
@@ -58,6 +59,7 @@ public class GameManager : MonoBehaviour
         public bool hasUpgrades;
         public CanvasMejorasController.UpgradeSaveData upgrades;
         public List<BrainrotSave> brainrots = new List<BrainrotSave>();
+        public List<ShopPurchaseSave> shopPurchases = new List<ShopPurchaseSave>();
     }
 
     [Serializable]
@@ -68,6 +70,13 @@ public class GameManager : MonoBehaviour
         public float y;
         public float z;
         public bool screen1;
+    }
+
+    [Serializable]
+    private struct ShopPurchaseSave
+    {
+        public int stage;
+        public int count;
     }
 
     private void Awake()
@@ -102,11 +111,27 @@ public class GameManager : MonoBehaviour
 
     private void OnApplicationQuit()
     {
-        SaveState();
+        if (IsMainGameSceneActive())
+        {
+            SaveState();
+        }
+    }
+
+    private void OnApplicationPause(bool pauseStatus)
+    {
+        if (pauseStatus && IsMainGameSceneActive())
+        {
+            SaveState();
+        }
     }
 
     public void RequestSave()
     {
+        if (!IsMainGameSceneActive())
+        {
+            return;
+        }
+
         SaveState();
     }
 
@@ -166,10 +191,7 @@ public class GameManager : MonoBehaviour
 
     private void HandleSceneUnloaded(Scene scene)
     {
-        if (scene.name == mainGameSceneName)
-        {
-            SaveState();
-        }
+        // Avoid overwriting saved data after the main scene unloads.
     }
 
     public int GetMaxBrainrotStage()
@@ -224,7 +246,18 @@ public class GameManager : MonoBehaviour
             return false;
         }
 
+        RegisterShopPurchase(stage);
         return true;
+    }
+
+    public int GetShopPurchaseCount(int stage)
+    {
+        if (stage < 1)
+        {
+            return 0;
+        }
+
+        return shopPurchaseCounts.TryGetValue(stage, out int count) ? count : 0;
     }
 
     public void AddMoney(float amount)
@@ -275,10 +308,15 @@ public class GameManager : MonoBehaviour
 
         bool alreadyParented = IsInScreenContainer(brainrot.transform);
 
+        bool justUnlocked = false;
         if (brainrot.stage >= 11)
         {
             MoveToScreen2(brainrot);
-            AutoSwitchToScreen2();
+            justUnlocked = TryUnlockChangeWorldForStage(brainrot.stage);
+            if (justUnlocked)
+            {
+                AutoSwitchToScreen2();
+            }
         }
         else
         {
@@ -298,12 +336,18 @@ public class GameManager : MonoBehaviour
         if (brainrot == null) return;
         EnsureContainers();
         TrackHighestStage(newStage);
-        TryUnlockChangeWorldForStage(newStage);
-
         if (newStage >= 11)
         {
             MoveToScreen2(brainrot);
-            AutoSwitchToScreen2();
+            bool justUnlocked = TryUnlockChangeWorldForStage(newStage);
+            if (justUnlocked)
+            {
+                AutoSwitchToScreen2();
+            }
+        }
+        else
+        {
+            TryUnlockChangeWorldForStage(newStage);
         }
     }
 
@@ -371,10 +415,11 @@ public class GameManager : MonoBehaviour
             showingScreen1 = showingScreen1,
             globalMoneyMultiplier = ClickableObject.GetGlobalMoneyMultiplier(),
             globalAutoClickReduction = ClickableObject.GetGlobalAutoClickReduction(),
-            brainrots = CollectBrainrots()
+            brainrots = CollectBrainrots(),
+            shopPurchases = CollectShopPurchases()
         };
 
-        CanvasMejorasController upgrades = FindFirstObjectByType<CanvasMejorasController>();
+        CanvasMejorasController upgrades = FindFirstObjectByType<CanvasMejorasController>(FindObjectsInactive.Include);
         if (upgrades != null)
         {
             data.upgrades = upgrades.GetUpgradeSaveData();
@@ -415,6 +460,7 @@ public class GameManager : MonoBehaviour
 
         ClickableObject.SetGlobalMoneyMultiplier(data.globalMoneyMultiplier);
         ClickableObject.SetGlobalAutoClickReduction(data.globalAutoClickReduction);
+        RestoreShopPurchases(data.shopPurchases);
 
         pendingSave = data;
         TryUnlockChangeWorldForStage(highestStageReached);
@@ -443,6 +489,63 @@ public class GameManager : MonoBehaviour
         initialBrainrotSpawned = true;
     }
 
+    private void RegisterShopPurchase(int stage)
+    {
+        if (stage < 1)
+        {
+            return;
+        }
+
+        if (shopPurchaseCounts.TryGetValue(stage, out int count))
+        {
+            shopPurchaseCounts[stage] = count + 1;
+        }
+        else
+        {
+            shopPurchaseCounts[stage] = 1;
+        }
+    }
+
+    private List<ShopPurchaseSave> CollectShopPurchases()
+    {
+        List<ShopPurchaseSave> list = new List<ShopPurchaseSave>();
+        foreach (KeyValuePair<int, int> entry in shopPurchaseCounts)
+        {
+            if (entry.Key < 1 || entry.Value < 1)
+            {
+                continue;
+            }
+
+            list.Add(new ShopPurchaseSave
+            {
+                stage = entry.Key,
+                count = entry.Value
+            });
+        }
+
+        return list;
+    }
+
+    private void RestoreShopPurchases(List<ShopPurchaseSave> purchases)
+    {
+        shopPurchaseCounts.Clear();
+        if (purchases == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < purchases.Count; i++)
+        {
+            ShopPurchaseSave entry = purchases[i];
+            if (entry.stage < 1 || entry.count < 1)
+            {
+                continue;
+            }
+
+            shopPurchaseCounts[entry.stage] = entry.count;
+        }
+    }
+
     private void SpawnBrainrotAt(int stage, Vector3 position, Transform parent)
     {
         if (brainrotPrefab == null || parent == null) return;
@@ -457,7 +560,7 @@ public class GameManager : MonoBehaviour
 
     private void ClearExistingBrainrots()
     {
-        FusionObject[] existing = FindObjectsByType<FusionObject>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        FusionObject[] existing = FindObjectsByType<FusionObject>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         for (int i = 0; i < existing.Length; i++)
         {
             Destroy(existing[i].gameObject);
@@ -467,7 +570,7 @@ public class GameManager : MonoBehaviour
     private List<BrainrotSave> CollectBrainrots()
     {
         List<BrainrotSave> list = new List<BrainrotSave>();
-        FusionObject[] existing = FindObjectsByType<FusionObject>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        FusionObject[] existing = FindObjectsByType<FusionObject>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         for (int i = 0; i < existing.Length; i++)
         {
             FusionObject brainrot = existing[i];
@@ -509,7 +612,7 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        CanvasMejorasController upgrades = FindFirstObjectByType<CanvasMejorasController>();
+        CanvasMejorasController upgrades = FindFirstObjectByType<CanvasMejorasController>(FindObjectsInactive.Include);
         if (upgrades == null)
         {
             return;
@@ -542,7 +645,7 @@ public class GameManager : MonoBehaviour
 
     private int GetCurrentBrainrotCount()
     {
-        return UnityEngine.Object.FindObjectsByType<FusionObject>(FindObjectsInactive.Exclude, FindObjectsSortMode.None).Length;
+        return UnityEngine.Object.FindObjectsByType<FusionObject>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length;
     }
 
     private FusionObject GetBrainrotPrefabFusion()
@@ -687,13 +790,16 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void TryUnlockChangeWorldForStage(int stage)
+    private bool TryUnlockChangeWorldForStage(int stage)
     {
         int unlockStage = Mathf.Max(1, changeWorldUnlockStage);
-        if (stage > unlockStage)
+        if (stage > unlockStage && !changeWorldUnlocked)
         {
             UnlockChangeWorld();
+            return true;
         }
+
+        return false;
     }
 
     private void AutoSwitchToScreen2()
