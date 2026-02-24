@@ -1,4 +1,5 @@
 using TMPro;
+using System.Globalization;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -142,7 +143,33 @@ public class UIManager : MonoBehaviour
         {
             return;
         }
-        moneyText.text = $"${money:F0}";
+
+        moneyText.text = $"${FormatCompactMoney(money)}";
+    }
+
+    private static string FormatCompactMoney(float money)
+    {
+        double value = Mathf.Max(0f, money);
+        if (value < 1000d)
+        {
+            return Mathf.FloorToInt((float)value).ToString(CultureInfo.InvariantCulture);
+        }
+
+        string[] suffixes = { "K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc" };
+        int suffixIndex = -1;
+
+        while (value >= 1000d && suffixIndex < suffixes.Length - 1)
+        {
+            value /= 1000d;
+            suffixIndex++;
+        }
+
+        bool isWhole = Mathf.Approximately((float)(value % 1d), 0f);
+        string numberPart = value >= 100d || isWhole
+            ? value.ToString("0", CultureInfo.InvariantCulture)
+            : value.ToString("0.00", CultureInfo.InvariantCulture);
+
+        return $"{numberPart}{suffixes[suffixIndex]}";
     }
 
     public void SetWorldBackground(bool showingScreen1)
